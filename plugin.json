@@ -1,0 +1,11 @@
+{
+  "name": "agent-bridge",
+  "version": "1.0.0",
+  "description": "Exchange asynchronous messages with agents from other providers (Codex, or another Claude session) through files under ~/.agent-bridge/.",
+  "author": {
+    "name": "Renato"
+  },
+  "repository": "https://github.com/rntgspr/agents",
+  "license": "MIT",
+  "keywords": ["agents", "messaging", "claude", "inter-provider"]
+}
