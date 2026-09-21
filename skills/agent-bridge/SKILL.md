@@ -16,7 +16,7 @@ message, delivered by an atomic `mv` into the recipient's directory, archived on
 read. No daemon, no network.
 
 Root: `~/.agent-bridge` (override with `AGENT_BRIDGE_ROOT`).
-Command: `~/.agents/plugins/agent-bridge/skills/agent-bridge/scripts/agent-bridge`
+Command: `~/agentic-workspace/papa/agent-bridge/skills/agent-bridge/scripts/agent-bridge`
 — the script lives under `skills/`, not `bin/`, so it is not on PATH; call it by
 this absolute path. Provider-agnostic, used by Claude and Codex alike.
 

@@ -217,7 +217,7 @@ send() {
     local thread; thread="$(codex_thread_for_slug "$rs")"
     [ -n "$thread" ] || thread="$rs"   # --thread also accepts the session name
     codex queue --thread "$thread" \
-      --message "agent-bridge: new message from ${sp}:${ss} (msgid ${msgid}). Run: ~/.agents/skills/agent-bridge/scripts/agent-bridge inbox ${rp}:${rs}" \
+      --message "agent-bridge: new message from ${sp}:${ss} (msgid ${msgid}). Run: ~/agentic-workspace/papa/agent-bridge/skills/agent-bridge/scripts/agent-bridge inbox ${rp}:${rs}" \
       >/dev/null 2>&1 || true
   fi
 
