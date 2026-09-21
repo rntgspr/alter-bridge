@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "index=.cumaru/disciplines/index.md; [ -f \"$index\" ] && { printf \"\\n## Discipline: %s\\n\\n\" \"$index\"; cat \"$index\"; }; for file in .cumaru/disciplines/*.md; do [ \"$file\" = \"$index\" ] && continue; [ -f \"$file\" ] && { printf \"\\n## Discipline: %s\\n\\n\" \"$file\"; cat \"$file\"; }; done; cumaru tree . 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
