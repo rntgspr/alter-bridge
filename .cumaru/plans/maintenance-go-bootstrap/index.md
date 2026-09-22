@@ -1,7 +1,7 @@
 ---
 human_revised: false
 scope: []
-status: in-progress
+status: done
 summary: Bootstrap a minimal Go module producing a "hello world" alter-bridge binary, ahead of a future Go rewrite of the bash CLI.
 targets: [cli]
 aux: []
@@ -20,18 +20,20 @@ empty and no spec delta is expected on close. Binary name follows the
 
 ## Acceptance Criteria (EARS / RFC 2119)
 
-- A `go.mod` file MUST exist at the repository root declaring the module.
-- `cmd/alter-bridge/main.go` MUST print `hello world` to stdout when run via `go run`.
-- Running `go build -o bin/alter-bridge ./cmd/alter-bridge` MUST produce an executable at `bin/alter-bridge`.
-- Running `./bin/alter-bridge` MUST print `hello world` and exit `0`.
+- A `go.mod` file MUST exist under `go/` declaring the module (the Go
+  module root is `go/`, not the repository root, to keep future
+  non-Go apps — Rust, Node — from mixing into the same directory).
+- `go/cmd/alter-bridge/main.go` MUST print `hello world` to stdout when run via `go run`.
+- Running `./go/build.sh` MUST produce an executable at `bin/alter-bridge` (repo root).
+- Running `./bin/alter-bridge` from the repo root MUST print `hello world` and exit `0`.
 - `bin/` MUST be excluded from version control via `.gitignore`.
 
 ## Plan / DAG
 
 | Task | Title | Status | Depends on |
 |------|-------|--------|-----------|
-| [T1](t1.md) | Init go.mod and hello-world main | pending | — |
-| [T2](t2.md) | Build to bin/ and gitignore it | pending | T1 |
+| [T1](t1.md) | Init go.mod and hello-world main | done | — |
+| [T2](t2.md) | Build to bin/ and gitignore it | done | T1 |
 
 ## Out of scope
 
