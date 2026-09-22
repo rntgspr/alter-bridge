@@ -10,7 +10,7 @@ targets: [cli, hooks, plugin, skill]
 
 ## Overview
 
-`agent-bridge` is a filesystem mailbox shared by every agent on a machine. One
+`alter-bridge` is a filesystem mailbox shared by every agent on a machine. One
 file per message, delivered by an atomic `mv` into the recipient's directory
 and archived on read. There is no daemon and no network: delivery never
 depends on the recipient being awake, and a message waits in the mailbox as
@@ -69,7 +69,7 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - WHEN sending to a live Codex session THE SYSTEM SHALL nudge it directly via
   `codex queue`, and SHALL skip the nudge silently when no session by that
   name is running.
-- Every `relay` invocation MUST be logged to `$AGENT_BRIDGE_ROOT/.tmp/relay.log`
+- Every `relay` invocation MUST be logged to `$ALTER_BRIDGE_ROOT/.tmp/relay.log`
   so a silently dead `FileChanged` watcher is diagnosable from the log's last
   entry.
 
@@ -94,7 +94,7 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   monorepo into its own repository; root `plugin.json` restored for Codex
   discovery and repository URLs repointed. Reflects a packaging move, not a
   behavior change.
-- The bridge script lives under `skills/agent-bridge/scripts/`, not `bin/`,
+- The bridge script lives under `skills/alter-bridge/scripts/`, not `bin/`,
   so it is deliberately off `PATH` — every caller invokes it by absolute
   path, keeping the mailbox tool scoped to the skill that documents its use.
 - `who` reads addressable agents live from each CLI's own state (`claude
@@ -104,9 +104,9 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 
 ## Files
 
-- [skills/agent-bridge/scripts/agent-bridge](/skills/agent-bridge/scripts/agent-bridge) — the CLI: addressing, `send`, `inbox`/`peek`, `hook`, `watchpaths`, `relay`, `archive`, `purge`, `who`.
-- [skills/agent-bridge/scripts/install-hooks.sh](/skills/agent-bridge/scripts/install-hooks.sh) — installs/reconciles hooks in `~/.claude/settings.json` and `~/.codex/hooks.json`.
-- [skills/agent-bridge/SKILL.md](/skills/agent-bridge/SKILL.md) — how an agent is meant to use the bridge (addressing, sending, replying, rules).
+- [skills/alter-bridge/scripts/alter-bridge](/skills/alter-bridge/scripts/alter-bridge) — the CLI: addressing, `send`, `inbox`/`peek`, `hook`, `watchpaths`, `relay`, `archive`, `purge`, `who`.
+- [skills/alter-bridge/scripts/install-hooks.sh](/skills/alter-bridge/scripts/install-hooks.sh) — installs/reconciles hooks in `~/.claude/settings.json` and `~/.codex/hooks.json`.
+- [skills/alter-bridge/SKILL.md](/skills/alter-bridge/SKILL.md) — how an agent is meant to use the bridge (addressing, sending, replying, rules).
 - [.claude-plugin/plugin.json](/.claude-plugin/plugin.json) — Claude plugin manifest.
 - [plugin.json](/plugin.json) — Codex plugin manifest.
 - [README.md](/README.md) — install, message flow, and layout docs for the repository.
@@ -116,9 +116,9 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 <!-- cumaru:reference -->
 | Link | Description |
 |------|-------------|
-| [agent-bridge](skills/agent-bridge/scripts/agent-bridge) | Mailbox CLI: address parsing, atomic send, drain/archive, hook entry points, doorbell relay, roster lookup. |
-| [install-hooks.sh](skills/agent-bridge/scripts/install-hooks.sh) | Installs/reconciles the Claude and Codex hook wiring that drives delivery and the doorbell. |
-| [SKILL.md](skills/agent-bridge/SKILL.md) | Agent-facing usage contract for the bridge. |
+| [alter-bridge](skills/alter-bridge/scripts/alter-bridge) | Mailbox CLI: address parsing, atomic send, drain/archive, hook entry points, doorbell relay, roster lookup. |
+| [install-hooks.sh](skills/alter-bridge/scripts/install-hooks.sh) | Installs/reconciles the Claude and Codex hook wiring that drives delivery and the doorbell. |
+| [SKILL.md](skills/alter-bridge/SKILL.md) | Agent-facing usage contract for the bridge. |
 | [.claude-plugin/plugin.json](.claude-plugin/plugin.json) | Claude-side plugin manifest. |
 | [plugin.json](plugin.json) | Codex-side plugin manifest. |
 | [README.md](README.md) | Install steps, message-flow walkthrough, layout, and the known `FileChanged` rough edge. |
