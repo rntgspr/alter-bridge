@@ -100,16 +100,46 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - `who` reads addressable agents live from each CLI's own state (`claude
   agents --json`, the Codex `state_5.sqlite` threads table) rather than
   caching a roster here, since the CLIs already hold that truth and a second
-  copy would only drift.
+  copy would only drift. Observed 2026-09-22 on Claude Code v2.1.280:
+  `claude agents --json` failed with `too many arguments for 'agents'` and
+  only covers background agents, so the bash Claude name lookup
+  (`claude_session_name`, and `who`'s Claude half) likely resolves nothing for
+  interactive sessions.
 - A Go rewrite has started under `go/` (its own module, kept out of the repo
   root so future non-Go tooling can sit alongside it without mixing). The
   first piece is `internal/broker.EnsureRoot`, which resolves and creates the
   mailbox root (`$ALTER_BRIDGE_ROOT` override, else `$HOME/.alter-bridge`)
   and refuses an empty or `/` `$HOME` before touching the filesystem —
-  `cmd/alter-bridge/main.go` calls it at startup. This guard is stricter
-  than the bash script, which never validates `$HOME`; the bash CLI's
-  documented Requirements above are unchanged and still authoritative until
-  the rewrite covers addressing, delivery, and the doorbell.
+  `cmd/alter-bridge/main.go` calls it before running a subcommand. This guard
+  is stricter than the bash script, which never validates `$HOME`; the bash
+  CLI's documented Requirements above are unchanged and still authoritative
+  until the rewrite covers addressing, delivery, and the doorbell.
+- 2026-09 (`maintenance-go-send`): the Go `send` is built but not yet wired
+  into hooks or the skill, and it diverges from the bash identity model on
+  purpose; it replaces the Addressing requirements above at cutover:
+  - Identity is option-only: `--from provider:value` is required and no
+    environment variable (`AGENT_SLUG`, `CLAUDE_CODE_SESSION_ID`,
+    `CODEX_THREAD_ID`, ...) decides sender or recipient. The working-directory
+    fallback and the `default` slug are gone; only `HOME` (to locate session
+    stores) and `ALTER_BRIDGE_ROOT` are read.
+  - Providers are `claude`, `codex`, `opencode`.
+  - A value matching a session id resolves to that session's slugified name,
+    or its slugified id when unnamed; any other value is a name. The mailbox
+    is keyed by the name slug, so a new session reusing an archived session's
+    name inherits its mailbox.
+  - Name matching considers only active sessions (Codex `archived = 0`,
+    OpenCode `time_archived IS NULL`; Claude has no archive flag, so every
+    titled session counts). Two or more active sessions sharing a name refuse
+    delivery and list their ids so the caller addresses one by id.
+  - Session state is read live: Claude `custom-title` entries in
+    `~/.claude/projects/*/<id>.jsonl`, Codex `state_5.sqlite` (fallback
+    `session_index.jsonl`), OpenCode `opencode.db` `title`, through the
+    `sqlite3` CLI in `mode=ro` so the binary carries no SQLite driver.
+  - `--type` is validated against `message | question | result | ack`, and an
+    empty resolved slug is refused. Frontmatter, file naming, and atomic
+    temp-then-rename delivery are byte-compatible with bash, whose `peek`
+    reads Go-written messages. A live Codex recipient is nudged via
+    `codex queue`, best effort.
 
 ## Files
 
@@ -120,6 +150,11 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - [plugin.json](/plugin.json) — Codex plugin manifest.
 - [README.md](/README.md) — install, message flow, and layout docs for the repository.
 - [go/internal/broker/root.go](/go/internal/broker/root.go) — Go rewrite: resolves and guards the mailbox root.
+- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send` subcommand.
+- [go/internal/address/address.go](/go/internal/address/address.go) — Go rewrite: address parsing and bash-parity slugify.
+- [go/internal/session/](/go/internal/session/) — Go rewrite: session-store readers and id/name-to-slug resolution.
+- [go/internal/message/message.go](/go/internal/message/message.go) — Go rewrite: message frontmatter and atomic delivery.
+- [go/internal/nudge/nudge.go](/go/internal/nudge/nudge.go) — Go rewrite: best-effort `codex queue` nudge.
 
 ## Reference
 
@@ -133,4 +168,11 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | [plugin.json](plugin.json) | Codex-side plugin manifest. |
 | [README.md](README.md) | Install steps, message-flow walkthrough, layout, and the known `FileChanged` rough edge. |
 | [go/internal/broker/root.go](go/internal/broker/root.go) | Go rewrite: `EnsureRoot` resolves and creates the mailbox root, guarding against an empty or `/` `$HOME`. |
+| [go/cmd/alter-bridge/main.go](go/cmd/alter-bridge/main.go) | Go rewrite: CLI entry; dispatches subcommands and reads only `HOME` and `ALTER_BRIDGE_ROOT`. |
+| [go/cmd/alter-bridge/send.go](go/cmd/alter-bridge/send.go) | Go rewrite: `send` — flags, required `--from`, slug resolution, delivery, nudge. |
+| [go/internal/address/address.go](go/internal/address/address.go) | Go rewrite: `provider:value` parsing (claude, codex, opencode) and bash-parity slugify. |
+| [go/internal/session/session.go](go/internal/session/session.go) | Go rewrite: resolves ids/names to mailbox slugs, skipping archived sessions and refusing ambiguous names. |
+| [go/internal/session/store.go](go/internal/session/store.go) | Go rewrite: live readers for Claude transcripts, Codex and OpenCode session databases. |
+| [go/internal/message/message.go](go/internal/message/message.go) | Go rewrite: bash-compatible frontmatter and file naming, atomic temp-then-rename delivery. |
+| [go/internal/nudge/nudge.go](go/internal/nudge/nudge.go) | Go rewrite: best-effort `codex queue` nudge for live Codex recipients. |
 <!-- /cumaru:reference -->
