@@ -7,7 +7,7 @@
 # A leading # is accepted but needs shell quoting, so the bare form is preferred.
 set -euo pipefail
 
-ROOT="${AGENT_BRIDGE_ROOT:-$HOME/.agent-bridge}"
+ROOT="${ALTER_BRIDGE_ROOT:-$HOME/.alter-bridge}"
 
 # UTC timestamp, lexicographically sortable. Milliseconds included so two
 # messages sent in the same second still read back in the order they were sent.
@@ -32,7 +32,7 @@ parse_addr() {
 check_addr() {
   case "${1#\#}" in
     ?*:?*) return 0 ;;
-    *) printf 'agent-bridge: address must be provider:slug (got "%s")\n' "$1" >&2; exit 2 ;;
+    *) printf 'alter-bridge: address must be provider:slug (got "%s")\n' "$1" >&2; exit 2 ;;
   esac
 }
 
@@ -126,22 +126,22 @@ codex_thread_for_slug() {
 usage() {
   cat >&2 <<'USAGE'
 usage:
-  agent-bridge send provider:slug [options] [body_file]
+  alter-bridge send provider:slug [options] [body_file]
       options: --from provider:slug      who is sending (default: this session)
                --type message|question|result|ack
                --thread ID  --in-reply-to MSGID
       body_file omitted or "-" reads the body from stdin.
-  agent-bridge inbox [provider:slug]      # prints pending, archives them
-  agent-bridge peek  [provider:slug]      # prints pending, keeps them
-  agent-bridge hook  [provider:slug]      # UserPromptSubmit entry point:
+  alter-bridge inbox [provider:slug]      # prints pending, archives them
+  alter-bridge peek  [provider:slug]      # prints pending, keeps them
+  alter-bridge hook  [provider:slug]      # UserPromptSubmit entry point:
                                              # registers this session, drains
-  agent-bridge archive [provider:slug]    # archive pending without reading
+  alter-bridge archive [provider:slug]    # archive pending without reading
                                              # (no address = every mailbox)
-  agent-bridge purge                      # delete the archived trail
-  agent-bridge who                        # addresses that announced themselves
-  agent-bridge watchpaths [provider:slug] # SessionStart: register the mailbox
+  alter-bridge purge                      # delete the archived trail
+  alter-bridge who                        # addresses that announced themselves
+  alter-bridge watchpaths [provider:slug] # SessionStart: register the mailbox
                                              # with the FileChanged watcher
-  agent-bridge relay                      # FileChanged: wake this session up
+  alter-bridge relay                      # FileChanged: wake this session up
 
 A leading # is accepted ('#codex:bridge'), but must be quoted — bash reads a
 bare leading # as the start of a comment.
@@ -217,7 +217,7 @@ send() {
     local thread; thread="$(codex_thread_for_slug "$rs")"
     [ -n "$thread" ] || thread="$rs"   # --thread also accepts the session name
     codex queue --thread "$thread" \
-      --message "agent-bridge: new message from ${sp}:${ss} (msgid ${msgid}). Run: ~/agentic-workspace/papa/agent-bridge/skills/agent-bridge/scripts/agent-bridge inbox ${rp}:${rs}" \
+      --message "alter-bridge: new message from ${sp}:${ss} (msgid ${msgid}). Run: ~/agentic-workspace/papa/alter-bridge/skills/alter-bridge/scripts/alter-bridge inbox ${rp}:${rs}" \
       >/dev/null 2>&1 || true
   fi
 
@@ -261,7 +261,7 @@ drain() {
       continue
     fi
 
-    printf '===== AGENT-BRIDGE MESSAGE: %s =====\n' "$base"
+    printf '===== ALTER-BRIDGE MESSAGE: %s =====\n' "$base"
     cat "$f"
     printf '\n'
   done
@@ -357,7 +357,7 @@ relay() {
   sender="${base#*__from_}"; sender="${sender%%__*}"
   msgid="${base##*__}"; msgid="${msgid%.md}"
 
-  note="agent-bridge: new message from ${sender/_/:} (msgid ${msgid})"
+  note="alter-bridge: new message from ${sender/_/:} (msgid ${msgid})"
 
   # Claude has no `codex queue`: the only way into a live session's queue is the
   # SendMessage tool, and only a Claude can call it. So a throwaway headless

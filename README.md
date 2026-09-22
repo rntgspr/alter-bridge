@@ -1,4 +1,4 @@
-# agent-bridge
+# alter-bridge
 
 A filesystem mailbox shared by every agent on a machine. One file per message,
 delivered by an atomic `mv`, archived on read. No daemon, no network.
@@ -13,12 +13,12 @@ on the recipient being awake, and the message waits as long as it has to.
 
 ## Install
 
-agent-bridge is a plugin on both sides (`.claude-plugin/plugin.json` for
+alter-bridge is a plugin on both sides (`.claude-plugin/plugin.json` for
 Claude, `plugin.json` for Codex — see [Layout](#layout)), installed via
 `install.sh` at the repo root through each runtime's own local marketplace
 (`plugins/.claude-plugin/marketplace.json`): `claude plugin install
-agent-bridge@agents-marketplace` for Claude, `codex plugin add
-agent-bridge@agents-marketplace` for Codex. Neither is symlinked into a
+alter-bridge@agents-marketplace` for Claude, `codex plugin add
+alter-bridge@agents-marketplace` for Codex. Neither is symlinked into a
 skills directory — that was the first approach and it worked, but it left the
 plugin looking like a plain skill in `~/.claude/skills/`, which was confusing
 next to the real skills there.
@@ -29,7 +29,7 @@ open), so hooks stay installed the same way on both sides: manually, into each
 runtime's global config. From a checkout of this repository, run once:
 
 ```
-skills/agent-bridge/scripts/install-hooks.sh
+skills/alter-bridge/scripts/install-hooks.sh
 ```
 
 This installs both runtimes' hooks:
@@ -46,8 +46,8 @@ This installs both runtimes' hooks:
 Pass `claude` or `codex` to install one side only:
 
 ```
-skills/agent-bridge/scripts/install-hooks.sh claude
-skills/agent-bridge/scripts/install-hooks.sh codex
+skills/alter-bridge/scripts/install-hooks.sh claude
+skills/alter-bridge/scripts/install-hooks.sh codex
 ```
 
 Re-running is safe. An entry already pointing at one of our commands is
@@ -76,7 +76,7 @@ hours — no error, no log, the session simply stops being woken. `watchPaths` i
 registered at `SessionStart` alone, so a session cannot re-register or even
 notice. Restarting is the only known recovery.
 
-`relay` logs every invocation to `$AGENT_BRIDGE_ROOT/.tmp/relay.log` precisely so
+`relay` logs every invocation to `$ALTER_BRIDGE_ROOT/.tmp/relay.log` precisely so
 this is diagnosable: if the last entry predates a message that never arrived, the
 watcher is gone.
 
@@ -85,14 +85,14 @@ watcher is gone.
 ```
 plugin.json                            Codex manifest
 .claude-plugin/plugin.json             Claude manifest
-skills/agent-bridge/SKILL.md           how an agent is meant to use it
-skills/agent-bridge/scripts/agent-bridge       the whole bridge
-skills/agent-bridge/scripts/install-hooks.sh   installs/reconciles hooks in both runtimes
+skills/alter-bridge/SKILL.md           how an agent is meant to use it
+skills/alter-bridge/scripts/alter-bridge       the whole bridge
+skills/alter-bridge/scripts/install-hooks.sh   installs/reconciles hooks in both runtimes
 ```
 
 Both runtimes install from this local marketplace into a cache
-(`~/.claude/plugins/cache/agents-marketplace/agent-bridge/` and
-`~/.codex/plugins/cache/agents-marketplace/agent-bridge/`), not a live symlink
+(`~/.claude/plugins/cache/agents-marketplace/alter-bridge/` and
+`~/.codex/plugins/cache/agents-marketplace/alter-bridge/`), not a live symlink
 back to this directory. After editing a file here, run `./install.sh` at the
 repo root again (it reinstalls both sides) to propagate the change — Claude
 picks it up at the next session start or `/reload-plugins`, Codex needs the
@@ -100,7 +100,7 @@ reinstall itself to recopy the snapshot.
 
 ## Configuration
 
-`AGENT_BRIDGE_ROOT` overrides the mailbox root (default `~/.agent-bridge`).
+`ALTER_BRIDGE_ROOT` overrides the mailbox root (default `~/.alter-bridge`).
 `AGENT_SLUG` overrides this session's address, which otherwise comes from the
 session name.
 

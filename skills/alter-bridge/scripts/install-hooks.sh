@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs the agent-bridge hooks into Claude Code and Codex.
+# Installs the alter-bridge hooks into Claude Code and Codex.
 #
 # Claude needs three, because it has no CLI way to be reached from outside:
 #   SessionStart      registers the mailbox directories as watch paths
@@ -19,7 +19,7 @@
 # are matched by subcommand alone and their path is repaired in place — never
 # left stale next to a freshly added, correctly pathed duplicate.
 #
-# This is the only installer either runtime gets — agent-bridge is a plugin on
+# This is the only installer either runtime gets — alter-bridge is a plugin on
 # both sides, but plugin-bundled hooks aren't a substitute: Codex does not
 # execute them yet (openai/codex#16430, open), so both runtimes keep getting
 # these hooks written into their global config instead. Run this once after
@@ -35,9 +35,9 @@ case "$target" in
 esac
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-bridge="$here/agent-bridge"
+bridge="$here/alter-bridge"
 
-[ -f "$bridge" ] || { printf 'install-hooks: agent-bridge not found next to this script (%s)\n' "$here" >&2; exit 1; }
+[ -f "$bridge" ] || { printf 'install-hooks: alter-bridge not found next to this script (%s)\n' "$here" >&2; exit 1; }
 
 # Store the path with $HOME left unexpanded, so the same settings file stays
 # valid on another machine or under a different user. The command runs through a
@@ -191,7 +191,7 @@ else:
     touched = apply(
         os.path.join(codex_dir, 'hooks.json'),
         [('UserPromptSubmit', None, 'hook', {'additionalContextLimit': 0})],
-        seed={'description': 'Inject pending agent-bridge messages into Codex prompts.'},
+        seed={'description': 'Inject pending alter-bridge messages into Codex prompts.'},
     )
     if touched:
         print('  NOTE: Codex tracks per-hook trust in config.toml under')
