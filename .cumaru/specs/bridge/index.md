@@ -101,6 +101,15 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   agents --json`, the Codex `state_5.sqlite` threads table) rather than
   caching a roster here, since the CLIs already hold that truth and a second
   copy would only drift.
+- A Go rewrite has started under `go/` (its own module, kept out of the repo
+  root so future non-Go tooling can sit alongside it without mixing). The
+  first piece is `internal/broker.EnsureRoot`, which resolves and creates the
+  mailbox root (`$ALTER_BRIDGE_ROOT` override, else `$HOME/.alter-bridge`)
+  and refuses an empty or `/` `$HOME` before touching the filesystem —
+  `cmd/alter-bridge/main.go` calls it at startup. This guard is stricter
+  than the bash script, which never validates `$HOME`; the bash CLI's
+  documented Requirements above are unchanged and still authoritative until
+  the rewrite covers addressing, delivery, and the doorbell.
 
 ## Files
 
@@ -110,6 +119,7 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - [.claude-plugin/plugin.json](/.claude-plugin/plugin.json) — Claude plugin manifest.
 - [plugin.json](/plugin.json) — Codex plugin manifest.
 - [README.md](/README.md) — install, message flow, and layout docs for the repository.
+- [go/internal/broker/root.go](/go/internal/broker/root.go) — Go rewrite: resolves and guards the mailbox root.
 
 ## Reference
 
@@ -122,4 +132,5 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | [.claude-plugin/plugin.json](.claude-plugin/plugin.json) | Claude-side plugin manifest. |
 | [plugin.json](plugin.json) | Codex-side plugin manifest. |
 | [README.md](README.md) | Install steps, message-flow walkthrough, layout, and the known `FileChanged` rough edge. |
+| [go/internal/broker/root.go](go/internal/broker/root.go) | Go rewrite: `EnsureRoot` resolves and creates the mailbox root, guarding against an empty or `/` `$HOME`. |
 <!-- /cumaru:reference -->
