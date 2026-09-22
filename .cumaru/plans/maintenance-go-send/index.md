@@ -73,7 +73,7 @@ already handled by `internal/broker.EnsureRoot`.
 | Task | Title | Depends on | Status |
 |---|---|---|---|
 | T1 | Address parsing and slugify | — | done |
-| T2 | Session lookup by id per provider | T1 | pending |
+| T2 | Session lookup by id per provider | T1 | done |
 | T3 | Message file write | T1 | pending |
 | T4 | `send` CLI wiring | T2, T3 | pending |
 | T5 | Codex nudge | T2, T4 | pending |
