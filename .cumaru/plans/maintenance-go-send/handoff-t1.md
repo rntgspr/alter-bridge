@@ -14,8 +14,8 @@ summary: Hand-off for maintenance-go-send T1 — address parsing and byte-level 
 <!-- cumaru:touched -->
 | Link | Description |
 |------|-------------|
-| [`go/internal/address/address.go`](../../../go/internal/address/address.go) | created — `Address`, `Parse` (providers claude, codex, opencode; leading `#` stripped), `Slugify` |
-| [`go/internal/address/address_test.go`](../../../go/internal/address/address_test.go) | created — table tests for valid/invalid addresses and bash-captured slugify outputs |
+| [`go/internal/address/address.go`](go/internal/address/address.go) | created — `Address`, `Parse` (providers claude, codex, opencode; leading `#` stripped), `Slugify` |
+| [`go/internal/address/address_test.go`](go/internal/address/address_test.go) | created — table tests for valid/invalid addresses and bash-captured slugify outputs |
 <!-- /cumaru:touched -->
 
 ## Decisions made during implementation
