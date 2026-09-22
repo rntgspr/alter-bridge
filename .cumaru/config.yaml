@@ -17,6 +17,7 @@ root:
     "*.md": {framework: true}
   plans:
     framework: true
+    tags: [go-rewrite-order]
     "*":
       frontmatter: {scope: {}, status: {}, summary: {}, targets: {}, key: {optional: true}, type: {optional: true}, epic: {optional: true}, story: {optional: true}, aux: {optional: true}}
       "t*.md": {frontmatter: {plan: {}, task: {}, depends-on: {}, concerns: {}, files: {}, status: {}, targets: {}, aux: {}}}

@@ -31,3 +31,21 @@ the complete plan after the acceptance, validation, and recovery gates pass.
 
 - Description of the system as it is today → `specs/<area>/`.
 - Pre-plan ideation, sketches, options analysis → `exploring/<slug>/`.
+
+## Go rewrite implementation order
+
+Adopter-owned sequencing note for the bridge's bash-to-Go port. Each entry
+is a `plans/maintenance-go-<command>/` scaffold; work them top to bottom
+unless a dependency is explicitly relaxed.
+
+<!-- cumaru:go-rewrite-order -->
+1. `maintenance-go-send` — addressing, message format, atomic write. Everything below reuses this.
+2. `maintenance-go-inbox` — drain + archive; the core read path.
+3. `maintenance-go-peek` — shares `inbox`'s read helper, minus archiving.
+4. `maintenance-go-who` — independent (session-state lookups), low risk, good to interleave early.
+5. `maintenance-go-archive` — reuses `inbox`'s archive-move logic for a whole mailbox or every mailbox.
+6. `maintenance-go-purge` — deletes what `archive` produced.
+7. `maintenance-go-hook` — wraps `send`'s addressing + `inbox`'s drain as the UserPromptSubmit entry point.
+8. `maintenance-go-watchpaths` — SessionStart registration; the doorbell's first half.
+9. `maintenance-go-relay` — FileChanged reaction to what `watchpaths` registered; most complex, land last.
+<!-- /cumaru:go-rewrite-order -->
