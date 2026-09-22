@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/rntgspr/alter-bridge/internal/address"
 	"github.com/rntgspr/alter-bridge/internal/message"
+	"github.com/rntgspr/alter-bridge/internal/nudge"
 	"github.com/rntgspr/alter-bridge/internal/session"
 )
 
@@ -19,6 +21,7 @@ type sendEnv struct {
 	Stdin    io.Reader
 	Stdout   io.Writer
 	Stderr   io.Writer
+	Nudger   nudge.Nudger
 }
 
 const sendUsage = `usage: alter-bridge send provider:value --from provider:value [options] [body_file|-]
@@ -110,5 +113,9 @@ func deliver(env sendEnv, to, from address.Address, m message.Message, body stri
 	}
 
 	fmt.Fprintln(env.Stdout, dest)
+
+	msgid := strings.TrimSuffix(dest[strings.LastIndex(dest, "__")+2:], ".md")
+	env.Nudger.Notify(from, to, msgid)
+
 	return 0
 }

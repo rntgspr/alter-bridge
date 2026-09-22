@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/rntgspr/alter-bridge/internal/broker"
+	"github.com/rntgspr/alter-bridge/internal/nudge"
 	"github.com/rntgspr/alter-bridge/internal/session"
 )
 
@@ -26,6 +27,8 @@ func main() {
 	case "send":
 		home := os.Getenv("HOME")
 
+		resolver := session.NewResolver(home)
+
 		root, err := broker.EnsureRoot(os.Getenv("ALTER_BRIDGE_ROOT"), home)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -34,10 +37,11 @@ func main() {
 
 		os.Exit(runSend(os.Args[2:], sendEnv{
 			Root:     root,
-			Resolver: session.NewResolver(home),
+			Resolver: resolver,
 			Stdin:    os.Stdin,
 			Stdout:   os.Stdout,
 			Stderr:   os.Stderr,
+			Nudger:   nudge.Nudger{Run: nudge.Exec, ThreadFor: resolver.CodexThreadForSlug},
 		}))
 
 	default:

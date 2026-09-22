@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rntgspr/alter-bridge/internal/nudge"
 	"github.com/rntgspr/alter-bridge/internal/session"
 )
 
@@ -100,6 +101,32 @@ func TestSend_ResolvesSessionIDs(t *testing.T) {
 	if !strings.Contains(stdout, filepath.Join("codex", "bridge-work")+string(filepath.Separator)) ||
 		!strings.Contains(stdout, "__from_claude_papa__") {
 		t.Fatalf("path %q not resolved through session names", stdout)
+	}
+}
+
+func TestSend_NudgesAfterDeliveryWithTheWrittenMsgid(t *testing.T) {
+	var got []string
+	root := t.TempDir()
+	var out bytes.Buffer
+
+	code := runSend([]string{"codex:bridge", "--from", "claude:papa"}, sendEnv{
+		Root:   root,
+		Stdin:  strings.NewReader("x"),
+		Stdout: &out,
+		Stderr: &bytes.Buffer{},
+		Nudger: nudge.Nudger{
+			Run:       func(name string, args ...string) error { got = append([]string{name}, args...); return nil },
+			ThreadFor: func(string) string { return "tid" },
+		},
+	})
+	if code != 0 {
+		t.Fatalf("exit = %d", code)
+	}
+
+	dest := strings.TrimSpace(out.String())
+	msgid := strings.TrimSuffix(dest[strings.LastIndex(dest, "__")+2:], ".md")
+	if len(got) != 6 || got[3] != "tid" || !strings.Contains(got[5], "(msgid "+msgid+")") {
+		t.Fatalf("nudge = %q, want codex queue on tid mentioning msgid %s", got, msgid)
 	}
 }
 

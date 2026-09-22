@@ -75,8 +75,8 @@ already handled by `internal/broker.EnsureRoot`.
 | T1 | Address parsing and slugify | — | done |
 | T2 | Session lookup by id per provider | T1 | done |
 | T3 | Message file write | T1 | done |
-| T4 | `send` CLI wiring | T2, T3 | in-progress |
-| T5 | Codex nudge | T2, T4 | pending |
+| T4 | `send` CLI wiring | T2, T3 | done |
+| T5 | Codex nudge | T2, T4 | done |
 
 T2 and T3 may run in parallel; their `files:` do not overlap.
 
