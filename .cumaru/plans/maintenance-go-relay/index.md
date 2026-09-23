@@ -63,7 +63,7 @@ workspace gate (bash `relay` has none).
 |---|---|---|---|
 | T1 | `session.ClaudeBin` + `nudge.RingClaude`: detached throwaway Claude ring with exact-path transcript cleanup | — | done |
 | T2 | `relay` subcommand: log, gates, notice, per-provider ring, wiring | T1 | done |
-| T3 | Live verification against a disposable Claude session (user-run) | T2 | pending |
+| T3 | Live verification against a disposable Claude session (user-run) | T2 | blocked |
 
 ## Out of scope
 
