@@ -41,7 +41,7 @@ Derived from `specs/bridge/index.md` ("Decisions") and the bash `who`:
 
 | Task | Title | Depends on | Status |
 |---|---|---|---|
-| T1 | `session.ClaudeAgents` — live `claude agents --json` reader with the `~/.local/bin` fallback | — | pending |
+| T1 | `session.ClaudeAgents` — live `claude agents --json` reader with the `~/.local/bin` fallback | — | done |
 | T2 | `who` CLI wiring over the Claude agents reader and the Codex store | T1 | pending |
 
 ## Out of scope
