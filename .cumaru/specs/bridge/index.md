@@ -53,6 +53,11 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - WHEN `archive` is given no address THE SYSTEM SHALL do the same for every
   `<provider>/<slug>` mailbox under the root, skipping dot-named directories,
   and report one line per mailbox that had messages, then `total: <n>`.
+- WHEN `purge` is invoked THE SYSTEM SHALL permanently delete every `*.md`
+  entry directly under `<root>/.archive` (not dot-named, not recursive, no
+  other file types), without confirmation and without creating the root, and
+  report `purged <n> archived message(s) from <root>/.archive`, or
+  `nothing to purge` when `.archive/` is not a directory.
 - A message of `type: question` MUST be treated as open until a reply is
   sent back to it; `message`, `result`, and `ack` types are informational.
 - Never hand-write a message file directly into an agent's mailbox directory
@@ -187,6 +192,16 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   `archived 0` (bash prints an empty count); `-h`, `--help`, extra
   arguments, and unknown providers are usage errors (exit 2); ambiguous or
   empty slugs exit 1.
+- 2026-09 (`maintenance-go-purge`): the Go `purge` is built but not yet wired
+  into hooks or the skill. The delete is `mailbox.Purge` next to `Archive`
+  (`ErrNoArchive` when `.archive` is not a directory), and the root comes from
+  `broker.Resolve`, the guard `EnsureRoot` now wraps, so `purge` never creates
+  the root. Stdout and the resulting tree are byte-identical to bash for a
+  populated, an absent, and a root-less archive; symlinked `*.md` entries are
+  removed as links, broken ones kept. Deviations: a directory named `*.md` is
+  skipped (bash `rm` fails and aborts mid-purge with exit 1); any argument,
+  including `-h`/`--help`, is a usage error (exit 2); the printed path is
+  `filepath.Join`-cleaned.
 
 ## Files
 
@@ -196,9 +211,9 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - [.claude-plugin/plugin.json](/.claude-plugin/plugin.json) — Claude plugin manifest.
 - [plugin.json](/plugin.json) — Codex plugin manifest.
 - [README.md](/README.md) — install, message flow, and layout docs for the repository.
-- [go/internal/broker/root.go](/go/internal/broker/root.go) — Go rewrite: resolves and guards the mailbox root.
-- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, `peek`, `archive`, and `who` subcommands.
-- [go/internal/mailbox/mailbox.go](/go/internal/mailbox/mailbox.go) — Go rewrite: oldest-first mailbox drain with optional bash-parity archiving, count-only archiving, and mailbox listing.
+- [go/internal/broker/root.go](/go/internal/broker/root.go) — Go rewrite: resolves and guards the mailbox root, with or without creating it.
+- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, `peek`, `archive`, `purge`, and `who` subcommands.
+- [go/internal/mailbox/mailbox.go](/go/internal/mailbox/mailbox.go) — Go rewrite: oldest-first mailbox drain with optional bash-parity archiving, count-only archiving, mailbox listing, and purging the archive.
 - [go/internal/address/address.go](/go/internal/address/address.go) — Go rewrite: address parsing and bash-parity slugify.
 - [go/internal/session/](/go/internal/session/) — Go rewrite: session-store readers, the live `claude agents --json` reader, and id/name-to-slug resolution.
 - [go/internal/message/message.go](/go/internal/message/message.go) — Go rewrite: message frontmatter and atomic delivery.
@@ -215,7 +230,7 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | [.claude-plugin/plugin.json](.claude-plugin/plugin.json) | Claude-side plugin manifest. |
 | [plugin.json](plugin.json) | Codex-side plugin manifest. |
 | [README.md](README.md) | Install steps, message-flow walkthrough, layout, and the known `FileChanged` rough edge. |
-| [go/internal/broker/root.go](go/internal/broker/root.go) | Go rewrite: `EnsureRoot` resolves and creates the mailbox root, guarding against an empty or `/` `$HOME`. |
+| [go/internal/broker/root.go](go/internal/broker/root.go) | Go rewrite: `Resolve` picks the mailbox root, guarding against an empty or `/` `$HOME`, without creating it; `EnsureRoot` resolves and creates it. |
 | [go/cmd/alter-bridge/main.go](go/cmd/alter-bridge/main.go) | Go rewrite: CLI entry; dispatches subcommands and reads only `HOME` and `ALTER_BRIDGE_ROOT`. |
 | [go/cmd/alter-bridge/send.go](go/cmd/alter-bridge/send.go) | Go rewrite: `send` — flags, required `--from`, slug resolution, delivery, nudge. |
 | [go/internal/address/address.go](go/internal/address/address.go) | Go rewrite: `provider:value` parsing (claude, codex, opencode) and bash-parity slugify. |
@@ -224,9 +239,10 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | [go/internal/message/message.go](go/internal/message/message.go) | Go rewrite: bash-compatible frontmatter and file naming, atomic temp-then-rename delivery. |
 | [go/internal/nudge/nudge.go](go/internal/nudge/nudge.go) | Go rewrite: best-effort `codex queue` nudge for live Codex recipients. |
 | [go/cmd/alter-bridge/inbox.go](go/cmd/alter-bridge/inbox.go) | Go rewrite: `inbox` — required address, slug resolution, archiving drain; hosts `runDrain`, the argument and resolution path shared with `peek`. |
-| [go/internal/mailbox/mailbox.go](go/internal/mailbox/mailbox.go) | Go rewrite: `Drain` reads a mailbox oldest first, optionally archiving each message under a bash-parity, collision-safe name; `Archive` does the same archiving without reading, returning a count; `Boxes` lists every non-dot `<provider>/<slug>` mailbox. |
+| [go/internal/mailbox/mailbox.go](go/internal/mailbox/mailbox.go) | Go rewrite: `Drain` reads a mailbox oldest first, optionally archiving each message under a bash-parity, collision-safe name; `Archive` does the same archiving without reading, returning a count; `Boxes` lists every non-dot `<provider>/<slug>` mailbox; `Purge` deletes the non-dot `*.md` entries directly under `.archive` (`ErrNoArchive` when it is not a directory). |
 | [go/cmd/alter-bridge/peek.go](go/cmd/alter-bridge/peek.go) | Go rewrite: `peek` — `runDrain` with archiving off; prints pending messages and keeps them. |
 | [go/cmd/alter-bridge/archive.go](go/cmd/alter-bridge/archive.go) | Go rewrite: `archive` — one resolved address or a sweep of every mailbox, archiving without printing and reporting counts. |
+| [go/cmd/alter-bridge/purge.go](go/cmd/alter-bridge/purge.go) | Go rewrite: `purge` — no arguments, deletes the archived trail without confirmation or creating the root, bash-parity output. |
 | [go/cmd/alter-bridge/who.go](go/cmd/alter-bridge/who.go) | Go rewrite: `who` — live Claude agents and the 10 most recent Codex threads in bash's format, degrading per provider. |
 | [go/internal/session/agents.go](go/internal/session/agents.go) | Go rewrite: `ClaudeAgents` reads running interactive sessions from `claude agents --json`, falling back to `~/.local/bin/claude`. |
 <!-- /cumaru:reference -->
