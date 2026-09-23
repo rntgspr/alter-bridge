@@ -150,6 +150,12 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   parameterized by whether it archives, for `peek`, `archive`, and `hook` to
   reuse. Unlike bash, a directory named `*.md` inside a mailbox is skipped
   rather than archived.
+- 2026-09 (`maintenance-go-peek`): the Go `peek` is built but not yet wired
+  into hooks or the skill. It shares `inbox`'s CLI path (`runDrain`: required
+  `provider:value` address with no `self_addr` fallback, same session
+  resolver, same exit codes) and calls `mailbox.Drain` with archiving off, so
+  it prints oldest first in `inbox`'s format, byte-identical to bash `peek`,
+  and moves nothing.
 
 ## Files
 
@@ -160,7 +166,7 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - [plugin.json](/plugin.json) — Codex plugin manifest.
 - [README.md](/README.md) — install, message flow, and layout docs for the repository.
 - [go/internal/broker/root.go](/go/internal/broker/root.go) — Go rewrite: resolves and guards the mailbox root.
-- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send` and `inbox` subcommands.
+- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, and `peek` subcommands.
 - [go/internal/mailbox/mailbox.go](/go/internal/mailbox/mailbox.go) — Go rewrite: oldest-first mailbox drain with optional bash-parity archiving.
 - [go/internal/address/address.go](/go/internal/address/address.go) — Go rewrite: address parsing and bash-parity slugify.
 - [go/internal/session/](/go/internal/session/) — Go rewrite: session-store readers and id/name-to-slug resolution.
@@ -186,6 +192,7 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | [go/internal/session/store.go](go/internal/session/store.go) | Go rewrite: live readers for Claude transcripts, Codex and OpenCode session databases. |
 | [go/internal/message/message.go](go/internal/message/message.go) | Go rewrite: bash-compatible frontmatter and file naming, atomic temp-then-rename delivery. |
 | [go/internal/nudge/nudge.go](go/internal/nudge/nudge.go) | Go rewrite: best-effort `codex queue` nudge for live Codex recipients. |
-| [go/cmd/alter-bridge/inbox.go](go/cmd/alter-bridge/inbox.go) | Go rewrite: `inbox` — required address, slug resolution, archiving drain. |
+| [go/cmd/alter-bridge/inbox.go](go/cmd/alter-bridge/inbox.go) | Go rewrite: `inbox` — required address, slug resolution, archiving drain; hosts `runDrain`, the argument and resolution path shared with `peek`. |
 | [go/internal/mailbox/mailbox.go](go/internal/mailbox/mailbox.go) | Go rewrite: `Drain` reads a mailbox oldest first, optionally archiving each message under a bash-parity, collision-safe name. |
+| [go/cmd/alter-bridge/peek.go](go/cmd/alter-bridge/peek.go) | Go rewrite: `peek` — `runDrain` with archiving off; prints pending messages and keeps them. |
 <!-- /cumaru:reference -->
