@@ -204,3 +204,81 @@ func TestDrain_MissingMailboxIsEmpty(t *testing.T) {
 		t.Fatalf(".archive created for an empty drain: %v", err)
 	}
 }
+
+func TestArchive_MovesLikeDrainAndCountsWithoutReading(t *testing.T) {
+	root := t.TempDir()
+	dir := seed(t, root, map[string]string{older: "first", newer: "second", "notes.txt": "t"})
+
+	// Unreadable content proves Archive never opens the message, as bash quiet never cats it.
+	if err := os.Chmod(filepath.Join(dir, older), 0o000); err != nil {
+		t.Fatal(err)
+	}
+
+	n, err := Archive(root, box)
+	if err != nil || n != 2 {
+		t.Fatalf("Archive = %d, %v; want 2, nil", n, err)
+	}
+
+	if got := names(t, dir); len(got) != 1 || got[0] != "notes.txt" {
+		t.Fatalf("mailbox = %v, want only notes.txt", got)
+	}
+
+	want := []string{
+		"20260922T100000.000Z__from_claude_papa__to_codex_bridge__aaaaaaaa.md",
+		"20260922T100001.000Z__from_claude_my_slug__to_codex_bridge__bbbbbbbb.md",
+	}
+	got := names(t, filepath.Join(root, ".archive"))
+	if len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
+		t.Fatalf("archive = %v, want %v", got, want)
+	}
+}
+
+func TestArchive_MissingMailboxIsZero(t *testing.T) {
+	root := t.TempDir()
+
+	n, err := Archive(root, box)
+	if err != nil || n != 0 {
+		t.Fatalf("Archive = %d, %v; want 0, nil", n, err)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".archive")); !os.IsNotExist(err) {
+		t.Fatalf(".archive created: %v", err)
+	}
+}
+
+func TestBoxes_ListsNonDotMailboxesInByteOrder(t *testing.T) {
+	root := t.TempDir()
+
+	for _, d := range []string{"codex/b", "claude/a", "claude/Z", ".archive/x", ".tmp/y", "codex/.hidden"} {
+		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(root, "codex", "file.md"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "stray.md"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := Boxes(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []address.Address{{Provider: "claude", Value: "Z"}, {Provider: "claude", Value: "a"}, {Provider: "codex", Value: "b"}}
+	if len(got) != len(want) {
+		t.Fatalf("Boxes = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("Boxes = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestBoxes_MissingRootIsEmpty(t *testing.T) {
+	got, err := Boxes(filepath.Join(t.TempDir(), "absent"))
+	if err != nil || len(got) != 0 {
+		t.Fatalf("Boxes = %v, %v", got, err)
+	}
+}

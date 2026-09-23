@@ -43,7 +43,7 @@ Derived from the bash `archive` and `drain ... quiet`:
 
 | Task | Title | Depends on | Status |
 |---|---|---|---|
-| T1 | `mailbox.Archive` count-only mode and `mailbox.Boxes` listing | — | pending |
+| T1 | `mailbox.Archive` count-only mode and `mailbox.Boxes` listing | — | done |
 | T2 | `archive` CLI wiring (one address or sweep) | T1 | pending |
 
 ## Out of scope
