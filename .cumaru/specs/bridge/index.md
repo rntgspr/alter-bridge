@@ -72,9 +72,14 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 
 ### Doorbell (hook-driven wake-up)
 
-- WHEN a Claude session starts THE SYSTEM SHALL register a `watchPaths` entry
-  for the whole provider directory (not just this agent's own mailbox), so a
-  later `/rename` or a mailbox that does not exist yet still rings.
+- WHEN a Claude session starts inside `~/agentic-workspace` THE SYSTEM SHALL
+  create the provider directory, this session's own mailbox, and
+  `<root>/.tmp`, then print
+  `{"hookSpecificOutput":{"hookEventName":"SessionStart","watchPaths":[<root>/<provider>, <root>/<provider>/<slug>]}}`
+  as one compact JSON line, registering the whole provider directory (not
+  just this agent's own mailbox) so a later `/rename` or a mailbox that does
+  not exist yet still rings; outside `~/agentic-workspace` it SHALL print and
+  create nothing.
 - WHEN a filesystem `add` event lands inside a session's own mailbox THE
   SYSTEM SHALL spawn a throwaway headless relay session that wakes the target
   session and deletes its own transcript on exit; `change` events and files
@@ -225,6 +230,20 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   outside the workspace (bash checks the shape only, after the gate), and
   ambiguous or empty slugs exit 1. Cutover must pass the provider in the
   hook wiring.
+- 2026-09 (`maintenance-go-watchpaths`): the Go `watchpaths` is built but not
+  yet wired into hooks or the skill. It shares `hook`'s argument, payload,
+  and workspace-gate helpers (`go/cmd/alter-bridge/hookinput.go`) and its
+  identity model: a bare provider (value = the payload's first non-empty
+  `session_id` / `thread_id` / `threadId`; bash reads `session_id` only) or an
+  explicit `provider:value`, both resolved through the session resolver; no
+  session id registers nothing (exit 0). The root comes from `broker.Resolve`
+  and is created only after the gate, by the mailbox `MkdirAll`, as bash's
+  `mkdir -p` does. The JSON line is encoded with HTML escaping off, and it
+  and the resulting tree are byte-identical to bash for an existing mailbox,
+  a new mailbox, an absent root, and a `cwd` outside the workspace.
+  Deviations: argument errors exit 2 even outside the workspace, ambiguous or
+  empty slugs exit 1, and paths are `filepath.Join`-cleaned. Cutover must
+  pass the provider in the SessionStart wiring.
 
 ## Files
 
@@ -235,7 +254,7 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - [plugin.json](/plugin.json) — Codex plugin manifest.
 - [README.md](/README.md) — install, message flow, and layout docs for the repository.
 - [go/internal/broker/root.go](/go/internal/broker/root.go) — Go rewrite: resolves and guards the mailbox root, with or without creating it.
-- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, `peek`, `archive`, `purge`, `who`, and `hook` subcommands.
+- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, `peek`, `archive`, `purge`, `who`, `hook`, and `watchpaths` subcommands.
 - [go/internal/mailbox/mailbox.go](/go/internal/mailbox/mailbox.go) — Go rewrite: oldest-first mailbox drain with optional bash-parity archiving, count-only archiving, mailbox listing, and purging the archive.
 - [go/internal/address/address.go](/go/internal/address/address.go) — Go rewrite: address parsing, the provider check, and bash-parity slugify.
 - [go/internal/session/](/go/internal/session/) — Go rewrite: session-store readers, the live `claude agents --json` reader, and id/name-to-slug resolution.
@@ -268,5 +287,7 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | [go/cmd/alter-bridge/purge.go](go/cmd/alter-bridge/purge.go) | Go rewrite: `purge` — no arguments, deletes the archived trail without confirmation or creating the root, bash-parity output. |
 | [go/cmd/alter-bridge/who.go](go/cmd/alter-bridge/who.go) | Go rewrite: `who` — live Claude agents and the 10 most recent Codex threads in bash's format, degrading per provider. |
 | [go/cmd/alter-bridge/hook.go](go/cmd/alter-bridge/hook.go) | Go rewrite: `hook`, the `UserPromptSubmit` entry point — provider or `provider:value` argument, payload session id and `cwd`, `~/agentic-workspace` gate, archiving drain without creating the root. |
+| [go/cmd/alter-bridge/watchpaths.go](go/cmd/alter-bridge/watchpaths.go) | Go rewrite: `watchpaths`, the `SessionStart` entry point — provider or `provider:value` argument, `~/agentic-workspace` gate, mailbox and `.tmp` creation after the gate, compact `watchPaths` JSON. |
+| [go/cmd/alter-bridge/hookinput.go](go/cmd/alter-bridge/hookinput.go) | Go rewrite: helpers shared by the hook entry points — argument shape (bare provider or `provider:value`), payload session id, and the `~/agentic-workspace` gate. |
 | [go/internal/session/agents.go](go/internal/session/agents.go) | Go rewrite: `ClaudeAgents` reads running interactive sessions from `claude agents --json`, falling back to `~/.local/bin/claude`. |
 <!-- /cumaru:reference -->
