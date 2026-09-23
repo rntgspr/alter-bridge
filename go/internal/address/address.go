@@ -21,6 +21,11 @@ func (a Address) String() string {
 	return a.Provider + ":" + a.Value
 }
 
+// IsProvider reports whether p names a runtime that can own a mailbox.
+func IsProvider(p string) bool {
+	return providers[p]
+}
+
 // Parse strips an optional leading '#', splits on the first ':' and rejects
 // unknown providers or empty halves.
 func Parse(s string) (Address, error) {

@@ -60,3 +60,16 @@ func TestSlugify_MatchesBash(t *testing.T) {
 		}
 	}
 }
+
+func TestIsProvider(t *testing.T) {
+	for _, p := range []string{"claude", "codex", "opencode"} {
+		if !IsProvider(p) {
+			t.Fatalf("IsProvider(%q) = false, want true", p)
+		}
+	}
+	for _, p := range []string{"", "gemini", "Claude", "claude:x"} {
+		if IsProvider(p) {
+			t.Fatalf("IsProvider(%q) = true, want false", p)
+		}
+	}
+}

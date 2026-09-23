@@ -16,6 +16,7 @@ commands:
   peek    print an agent's pending messages without archiving (alter-bridge peek -h)
   archive archive pending messages without printing them (alter-bridge archive -h)
   purge   permanently delete the archived messages (alter-bridge purge -h)
+  hook    UserPromptSubmit entry point: drain this session's mailbox (alter-bridge hook -h)
   who     list addressable agents from each CLI's live state (alter-bridge who -h)
 `
 
@@ -79,6 +80,27 @@ func main() {
 		}
 
 		os.Exit(runPurge(os.Args[2:], root, os.Stdout, os.Stderr))
+
+	case "hook":
+		home := os.Getenv("HOME")
+
+		root, err := broker.Resolve(os.Getenv("ALTER_BRIDGE_ROOT"), home)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		wd, _ := os.Getwd()
+
+		os.Exit(runHook(os.Args[2:], hookEnv{
+			Root:     root,
+			Resolver: session.NewResolver(home),
+			Home:     home,
+			Wd:       wd,
+			Stdin:    os.Stdin,
+			Stdout:   os.Stdout,
+			Stderr:   os.Stderr,
+		}))
 
 	case "who":
 		home := os.Getenv("HOME")

@@ -53,7 +53,7 @@ already says it replaces the bash Addressing rules at cutover, so the Go
 
 | Task | Title | Depends on | Status |
 |---|---|---|---|
-| T1 | `hook` subcommand: payload, workspace gate, drain | — | pending |
+| T1 | `hook` subcommand: payload, workspace gate, drain | — | done |
 
 ## Out of scope
 
