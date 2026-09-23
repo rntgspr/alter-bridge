@@ -14,6 +14,7 @@ commands:
   send    deliver a message into an agent's mailbox (alter-bridge send -h)
   inbox   print and archive an agent's pending messages (alter-bridge inbox -h)
   peek    print an agent's pending messages without archiving (alter-bridge peek -h)
+  archive archive pending messages without printing them (alter-bridge archive -h)
   who     list addressable agents from each CLI's live state (alter-bridge who -h)
 `
 
@@ -53,6 +54,16 @@ func main() {
 		root, resolver := setup()
 
 		os.Exit(runPeek(os.Args[2:], inboxEnv{
+			Root:     root,
+			Resolver: resolver,
+			Stdout:   os.Stdout,
+			Stderr:   os.Stderr,
+		}))
+
+	case "archive":
+		root, resolver := setup()
+
+		os.Exit(runArchive(os.Args[2:], inboxEnv{
 			Root:     root,
 			Resolver: resolver,
 			Stdout:   os.Stdout,
