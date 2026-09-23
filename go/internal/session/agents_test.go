@@ -84,3 +84,18 @@ func TestClaudeAgents_Errors(t *testing.T) {
 		})
 	}
 }
+
+func TestClaudeBin_PathThenLocalBin(t *testing.T) {
+	bin := t.TempDir()
+	fakeClaude(t, bin, "[]", 0)
+	t.Setenv("PATH", bin)
+
+	if got := ClaudeBin("/nohome"); got != filepath.Join(bin, "claude") {
+		t.Fatalf("ClaudeBin() = %q, want the PATH entry", got)
+	}
+
+	t.Setenv("PATH", t.TempDir())
+	if got, want := ClaudeBin("/h"), "/h/.local/bin/claude"; got != want {
+		t.Fatalf("ClaudeBin() = %q, want %q", got, want)
+	}
+}

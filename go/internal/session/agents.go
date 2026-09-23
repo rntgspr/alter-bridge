@@ -15,16 +15,21 @@ type Agent struct {
 	Cwd  string
 }
 
-// ClaudeAgents lists the running interactive Claude sessions, in the CLI's
-// order. The binary is looked up on PATH, then at ~/.local/bin/claude, because
-// callers reach the bridge from shells (Codex among them) whose PATH lacks it.
-func ClaudeAgents(home string) ([]Agent, error) {
-	bin, err := exec.LookPath("claude")
-	if err != nil {
-		bin = filepath.Join(home, ".local", "bin", "claude")
+// ClaudeBin returns the Claude CLI path: the PATH entry, else
+// home/.local/bin/claude, because callers reach the bridge from shells (Codex
+// among them) whose PATH lacks it. The fallback is returned unchecked.
+func ClaudeBin(home string) string {
+	if bin, err := exec.LookPath("claude"); err == nil {
+		return bin
 	}
 
-	out, err := exec.Command(bin, "agents", "--json").Output()
+	return filepath.Join(home, ".local", "bin", "claude")
+}
+
+// ClaudeAgents lists the running interactive Claude sessions, in the CLI's
+// order, running the binary ClaudeBin finds.
+func ClaudeAgents(home string) ([]Agent, error) {
+	out, err := exec.Command(ClaudeBin(home), "agents", "--json").Output()
 	if err != nil {
 		return nil, fmt.Errorf("session: claude agents: %w", err)
 	}
