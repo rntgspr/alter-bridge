@@ -47,6 +47,12 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   to `.archive/`, renamed to record who read it, disambiguating colliding
   names so archiving never loses a message.
 - `peek` SHALL read pending messages without archiving them.
+- WHEN `archive` is given an address THE SYSTEM SHALL move every pending
+  message of that mailbox to `.archive/` exactly as `inbox` does, print none
+  of them, and report `archived <n> from <address>`.
+- WHEN `archive` is given no address THE SYSTEM SHALL do the same for every
+  `<provider>/<slug>` mailbox under the root, skipping dot-named directories,
+  and report one line per mailbox that had messages, then `total: <n>`.
 - A message of `type: question` MUST be treated as open until a reply is
   sent back to it; `message`, `result`, and `ack` types are informational.
 - Never hand-write a message file directly into an agent's mailbox directory
@@ -170,6 +176,17 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   never creates the mailbox root. The live Claude reader
   (`session.ClaudeAgents`) is separate from the transcript store used for
   addressing, which lists every titled session rather than the running ones.
+- 2026-09 (`maintenance-go-archive`): the Go `archive` is built but not yet
+  wired into hooks or the skill. It archives through the same
+  `internal/mailbox` loop and `archiveOne` as `inbox` (`mailbox.Archive`, a
+  count-only mode that never reads the message) and sweeps `mailbox.Boxes`
+  (non-dot `<provider>/<slug>` directories, byte order). Stdout and the
+  resulting `.archive/` names are byte-identical to bash for a sweep and for
+  a single address. A given address is resolved through the session resolver
+  (go-send model) and echoed as given. Deviations: a missing mailbox reports
+  `archived 0` (bash prints an empty count); `-h`, `--help`, extra
+  arguments, and unknown providers are usage errors (exit 2); ambiguous or
+  empty slugs exit 1.
 
 ## Files
 
@@ -180,8 +197,8 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - [plugin.json](/plugin.json) — Codex plugin manifest.
 - [README.md](/README.md) — install, message flow, and layout docs for the repository.
 - [go/internal/broker/root.go](/go/internal/broker/root.go) — Go rewrite: resolves and guards the mailbox root.
-- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, `peek`, and `who` subcommands.
-- [go/internal/mailbox/mailbox.go](/go/internal/mailbox/mailbox.go) — Go rewrite: oldest-first mailbox drain with optional bash-parity archiving.
+- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, `peek`, `archive`, and `who` subcommands.
+- [go/internal/mailbox/mailbox.go](/go/internal/mailbox/mailbox.go) — Go rewrite: oldest-first mailbox drain with optional bash-parity archiving, count-only archiving, and mailbox listing.
 - [go/internal/address/address.go](/go/internal/address/address.go) — Go rewrite: address parsing and bash-parity slugify.
 - [go/internal/session/](/go/internal/session/) — Go rewrite: session-store readers, the live `claude agents --json` reader, and id/name-to-slug resolution.
 - [go/internal/message/message.go](/go/internal/message/message.go) — Go rewrite: message frontmatter and atomic delivery.
@@ -207,8 +224,9 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | [go/internal/message/message.go](go/internal/message/message.go) | Go rewrite: bash-compatible frontmatter and file naming, atomic temp-then-rename delivery. |
 | [go/internal/nudge/nudge.go](go/internal/nudge/nudge.go) | Go rewrite: best-effort `codex queue` nudge for live Codex recipients. |
 | [go/cmd/alter-bridge/inbox.go](go/cmd/alter-bridge/inbox.go) | Go rewrite: `inbox` — required address, slug resolution, archiving drain; hosts `runDrain`, the argument and resolution path shared with `peek`. |
-| [go/internal/mailbox/mailbox.go](go/internal/mailbox/mailbox.go) | Go rewrite: `Drain` reads a mailbox oldest first, optionally archiving each message under a bash-parity, collision-safe name. |
+| [go/internal/mailbox/mailbox.go](go/internal/mailbox/mailbox.go) | Go rewrite: `Drain` reads a mailbox oldest first, optionally archiving each message under a bash-parity, collision-safe name; `Archive` does the same archiving without reading, returning a count; `Boxes` lists every non-dot `<provider>/<slug>` mailbox. |
 | [go/cmd/alter-bridge/peek.go](go/cmd/alter-bridge/peek.go) | Go rewrite: `peek` — `runDrain` with archiving off; prints pending messages and keeps them. |
+| [go/cmd/alter-bridge/archive.go](go/cmd/alter-bridge/archive.go) | Go rewrite: `archive` — one resolved address or a sweep of every mailbox, archiving without printing and reporting counts. |
 | [go/cmd/alter-bridge/who.go](go/cmd/alter-bridge/who.go) | Go rewrite: `who` — live Claude agents and the 10 most recent Codex threads in bash's format, degrading per provider. |
 | [go/internal/session/agents.go](go/internal/session/agents.go) | Go rewrite: `ClaudeAgents` reads running interactive sessions from `claude agents --json`, falling back to `~/.local/bin/claude`. |
 <!-- /cumaru:reference -->
