@@ -67,3 +67,31 @@ func TestEnsureRoot_AlreadyExists(t *testing.T) {
 		t.Fatalf("second EnsureRoot() = %q, want %q", second, first)
 	}
 }
+
+func TestResolve_ChoosesRootWithoutCreatingIt(t *testing.T) {
+	home := t.TempDir()
+	override := filepath.Join(home, "custom-root")
+
+	cases := []struct{ override, home, want string }{
+		{override, "", override},
+		{"", home, filepath.Join(home, ".alter-bridge")},
+	}
+
+	for _, c := range cases {
+		got, err := Resolve(c.override, c.home)
+		if err != nil || got != c.want {
+			t.Fatalf("Resolve(%q, %q) = %q, %v; want %q", c.override, c.home, got, err, c.want)
+		}
+		if _, err := os.Stat(got); !os.IsNotExist(err) {
+			t.Fatalf("Resolve created %q: %v", got, err)
+		}
+	}
+}
+
+func TestResolve_GuardsHome(t *testing.T) {
+	for _, home := range []string{"", "/"} {
+		if _, err := Resolve("", home); err == nil {
+			t.Fatalf("Resolve(\"\", %q) error = nil, want refusal", home)
+		}
+	}
+}

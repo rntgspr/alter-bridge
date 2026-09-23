@@ -15,6 +15,7 @@ commands:
   inbox   print and archive an agent's pending messages (alter-bridge inbox -h)
   peek    print an agent's pending messages without archiving (alter-bridge peek -h)
   archive archive pending messages without printing them (alter-bridge archive -h)
+  purge   permanently delete the archived messages (alter-bridge purge -h)
   who     list addressable agents from each CLI's live state (alter-bridge who -h)
 `
 
@@ -69,6 +70,15 @@ func main() {
 			Stdout:   os.Stdout,
 			Stderr:   os.Stderr,
 		}))
+
+	case "purge":
+		root, err := broker.Resolve(os.Getenv("ALTER_BRIDGE_ROOT"), os.Getenv("HOME"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		os.Exit(runPurge(os.Args[2:], root, os.Stdout, os.Stderr))
 
 	case "who":
 		home := os.Getenv("HOME")
