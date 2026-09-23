@@ -2,6 +2,7 @@ package mailbox
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -280,5 +281,82 @@ func TestBoxes_MissingRootIsEmpty(t *testing.T) {
 	got, err := Boxes(filepath.Join(t.TempDir(), "absent"))
 	if err != nil || len(got) != 0 {
 		t.Fatalf("Boxes = %v, %v", got, err)
+	}
+}
+
+func TestPurge_DeletesOnlyTopLevelMarkdownEntries(t *testing.T) {
+	root := t.TempDir()
+	arch := filepath.Join(root, ".archive")
+	outside := filepath.Join(root, "target.txt")
+
+	for _, d := range []string{"sub", "dir.md"} {
+		if err := os.MkdirAll(filepath.Join(arch, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	files := []string{older, newer, ".hidden.md", "notes.txt", "sub/nested.md"}
+	for _, f := range files {
+		if err := os.WriteFile(filepath.Join(arch, f), []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(outside, []byte("keep"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(arch, "link.md")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(root, "absent"), filepath.Join(arch, "dead.md")); err != nil {
+		t.Fatal(err)
+	}
+
+	n, err := Purge(root)
+	if err != nil || n != 3 {
+		t.Fatalf("Purge = %d, %v; want 3, nil", n, err)
+	}
+
+	want := []string{".hidden.md", "dead.md", "dir.md", "notes.txt", "sub"}
+	got := names(t, arch)
+	if len(got) != len(want) {
+		t.Fatalf("archive = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("archive = %v, want %v", got, want)
+		}
+	}
+
+	if got := names(t, filepath.Join(arch, "sub")); len(got) != 1 {
+		t.Fatalf("nested entries touched: %v", got)
+	}
+	if _, err := os.Stat(outside); err != nil {
+		t.Fatalf("symlink target removed: %v", err)
+	}
+}
+
+func TestPurge_EmptyArchiveIsZero(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, ".archive"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	n, err := Purge(root)
+	if err != nil || n != 0 {
+		t.Fatalf("Purge = %d, %v; want 0, nil", n, err)
+	}
+}
+
+func TestPurge_NoArchiveDirectory(t *testing.T) {
+	missing := t.TempDir()
+
+	plain := t.TempDir()
+	if err := os.WriteFile(filepath.Join(plain, ".archive"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, root := range []string{missing, plain} {
+		if n, err := Purge(root); n != 0 || !errors.Is(err, ErrNoArchive) {
+			t.Fatalf("Purge(%s) = %d, %v; want 0, ErrNoArchive", root, n, err)
+		}
 	}
 }

@@ -41,7 +41,7 @@ Derived from the bash `purge`:
 
 | Task | Title | Depends on | Status |
 |---|---|---|---|
-| T1 | `mailbox.Purge` and `mailbox.ErrNoArchive` | — | pending |
+| T1 | `mailbox.Purge` and `mailbox.ErrNoArchive` | — | done |
 | T2 | `broker.Resolve` and `purge` CLI wiring | T1 | pending |
 
 ## Out of scope

@@ -3,6 +3,7 @@
 package mailbox
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,6 +16,10 @@ import (
 
 // newID is swapped by tests to pin the collision suffix sequence.
 var newID = message.RandomID
+
+// ErrNoArchive reports that root/.archive is missing or not a directory, so
+// there is nothing Purge could delete.
+var ErrNoArchive = errors.New("mailbox: no archive directory")
 
 // Drain prints every pending message of box (whose Value is a resolved slug)
 // to w, oldest first, in the bash inbox format. With archive set each message
@@ -65,6 +70,48 @@ func Boxes(root string) ([]address.Address, error) {
 	}
 
 	return out, nil
+}
+
+// Purge permanently deletes the archived trail: every entry directly under
+// root/.archive whose name ends in ".md" and does not start with ".", as the
+// bash glob matches, and that resolves to an existing non-directory. A symlink
+// is removed, never its target. It returns how many entries it deleted, or
+// ErrNoArchive when root/.archive is not a directory.
+func Purge(root string) (int, error) {
+	arch := filepath.Join(root, ".archive")
+
+	if info, err := os.Stat(arch); err != nil || !info.IsDir() {
+		return 0, ErrNoArchive
+	}
+
+	entries, err := os.ReadDir(arch)
+	if err != nil {
+		return 0, fmt.Errorf("mailbox: %w", err)
+	}
+
+	count := 0
+
+	for _, e := range entries {
+		name := e.Name()
+		if strings.HasPrefix(name, ".") || !strings.HasSuffix(name, ".md") {
+			continue
+		}
+
+		path := filepath.Join(arch, name)
+
+		// Bash rm fails on a directory named *.md and aborts mid-purge; skipping it is the recorded deviation.
+		if info, err := os.Stat(path); err != nil || info.IsDir() {
+			continue
+		}
+
+		if err := os.Remove(path); err != nil {
+			return count, fmt.Errorf("mailbox: %w", err)
+		}
+
+		count++
+	}
+
+	return count, nil
 }
 
 // drain is the loop behind Drain and Archive: it handles every pending message
