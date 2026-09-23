@@ -52,7 +52,7 @@ before T2 builds on it.
 | Task | Title | Depends on | Status |
 |---|---|---|---|
 | T1 | Extract shared hook argument, payload, and workspace-gate helpers | — | done |
-| T2 | `watchpaths` subcommand: payload, gate, mkdir, watchPaths JSON | T1 | pending |
+| T2 | `watchpaths` subcommand: payload, gate, mkdir, watchPaths JSON | T1 | done |
 
 ## Out of scope
 
