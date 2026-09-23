@@ -18,6 +18,7 @@ commands:
   purge   permanently delete the archived messages (alter-bridge purge -h)
   hook    UserPromptSubmit entry point: drain this session's mailbox (alter-bridge hook -h)
   watchpaths SessionStart entry point: register this session's mailbox (alter-bridge watchpaths -h)
+  relay   FileChanged entry point: ring this session for a new message (alter-bridge relay -h)
   who     list addressable agents from each CLI's live state (alter-bridge who -h)
 `
 
@@ -122,6 +123,29 @@ func main() {
 			Stdin:    os.Stdin,
 			Stdout:   os.Stdout,
 			Stderr:   os.Stderr,
+		}))
+
+	case "relay":
+		home := os.Getenv("HOME")
+
+		root, err := broker.Resolve(os.Getenv("ALTER_BRIDGE_ROOT"), home)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		resolver := session.NewResolver(home)
+
+		os.Exit(runRelay(os.Args[2:], relayEnv{
+			Root:     root,
+			Resolver: resolver,
+			Stdin:    os.Stdin,
+			Stdout:   os.Stdout,
+			Stderr:   os.Stderr,
+			Ring: func(name, prompt string) error {
+				return nudge.RingClaude(session.ClaudeBin(home), home, name, prompt)
+			},
+			Nudger: nudge.Nudger{Run: nudge.Exec, ThreadFor: resolver.CodexThreadForSlug},
 		}))
 
 	case "who":
