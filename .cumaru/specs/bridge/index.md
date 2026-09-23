@@ -47,6 +47,12 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   to `.archive/`, renamed to record who read it, disambiguating colliding
   names so archiving never loses a message.
 - `peek` SHALL read pending messages without archiving them.
+- WHEN the `UserPromptSubmit` hook runs THE SYSTEM SHALL read the session id
+  (`session_id`, `thread_id`, or `threadId`) and `cwd` from the JSON payload
+  on stdin, do nothing when that `cwd` (or, when it is unusable, the process
+  working directory) is outside `~/agentic-workspace`, and otherwise archive
+  and print every pending message of that session's mailbox exactly as
+  `inbox` does, creating neither the root nor the mailbox.
 - WHEN `archive` is given an address THE SYSTEM SHALL move every pending
   message of that mailbox to `.archive/` exactly as `inbox` does, print none
   of them, and report `archived <n> from <address>`.
@@ -202,6 +208,23 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   skipped (bash `rm` fails and aborts mid-purge with exit 1); any argument,
   including `-h`/`--help`, is a usage error (exit 2); the printed path is
   `filepath.Join`-cleaned.
+- 2026-09 (`maintenance-go-hook`): the Go `hook` is built but not yet wired
+  into hooks or the skill. It follows the go-send identity model instead of
+  `self_addr`: the argument is required, either a bare provider
+  (`hook claude`, value taken from the payload session id) or an explicit
+  `provider:value`, both resolved through the `send`/`inbox` session resolver
+  and drained with `mailbox.Drain`. No environment variable picks the
+  provider or slug, and a payload without a session id drains nothing (exit
+  0) instead of falling back to the cwd segment, so an unnamed session's
+  mailbox is keyed by its id. The root comes from `broker.Resolve` (never
+  created). Stdout and the resulting tree are byte-identical to bash for an
+  explicit address inside and outside the workspace, a missing mailbox, and
+  an absent root. Payload problems (empty, not JSON, non-string fields) are
+  silent exit 0, so the prompt is never blocked; deviations: a missing,
+  extra, `-h`/`--help`, unknown-provider, or malformed argument exits 2 even
+  outside the workspace (bash checks the shape only, after the gate), and
+  ambiguous or empty slugs exit 1. Cutover must pass the provider in the
+  hook wiring.
 
 ## Files
 
@@ -212,9 +235,9 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - [plugin.json](/plugin.json) — Codex plugin manifest.
 - [README.md](/README.md) — install, message flow, and layout docs for the repository.
 - [go/internal/broker/root.go](/go/internal/broker/root.go) — Go rewrite: resolves and guards the mailbox root, with or without creating it.
-- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, `peek`, `archive`, `purge`, and `who` subcommands.
+- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, `peek`, `archive`, `purge`, `who`, and `hook` subcommands.
 - [go/internal/mailbox/mailbox.go](/go/internal/mailbox/mailbox.go) — Go rewrite: oldest-first mailbox drain with optional bash-parity archiving, count-only archiving, mailbox listing, and purging the archive.
-- [go/internal/address/address.go](/go/internal/address/address.go) — Go rewrite: address parsing and bash-parity slugify.
+- [go/internal/address/address.go](/go/internal/address/address.go) — Go rewrite: address parsing, the provider check, and bash-parity slugify.
 - [go/internal/session/](/go/internal/session/) — Go rewrite: session-store readers, the live `claude agents --json` reader, and id/name-to-slug resolution.
 - [go/internal/message/message.go](/go/internal/message/message.go) — Go rewrite: message frontmatter and atomic delivery.
 - [go/internal/nudge/nudge.go](/go/internal/nudge/nudge.go) — Go rewrite: best-effort `codex queue` nudge.
@@ -233,7 +256,7 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | [go/internal/broker/root.go](go/internal/broker/root.go) | Go rewrite: `Resolve` picks the mailbox root, guarding against an empty or `/` `$HOME`, without creating it; `EnsureRoot` resolves and creates it. |
 | [go/cmd/alter-bridge/main.go](go/cmd/alter-bridge/main.go) | Go rewrite: CLI entry; dispatches subcommands and reads only `HOME` and `ALTER_BRIDGE_ROOT`. |
 | [go/cmd/alter-bridge/send.go](go/cmd/alter-bridge/send.go) | Go rewrite: `send` — flags, required `--from`, slug resolution, delivery, nudge. |
-| [go/internal/address/address.go](go/internal/address/address.go) | Go rewrite: `provider:value` parsing (claude, codex, opencode) and bash-parity slugify. |
+| [go/internal/address/address.go](go/internal/address/address.go) | Go rewrite: `provider:value` parsing (claude, codex, opencode), `IsProvider` for a bare provider, and bash-parity slugify. |
 | [go/internal/session/session.go](go/internal/session/session.go) | Go rewrite: resolves ids/names to mailbox slugs, skipping archived sessions and refusing ambiguous names. |
 | [go/internal/session/store.go](go/internal/session/store.go) | Go rewrite: live readers for Claude transcripts, Codex and OpenCode session databases. |
 | [go/internal/message/message.go](go/internal/message/message.go) | Go rewrite: bash-compatible frontmatter and file naming, atomic temp-then-rename delivery. |
@@ -244,5 +267,6 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | [go/cmd/alter-bridge/archive.go](go/cmd/alter-bridge/archive.go) | Go rewrite: `archive` — one resolved address or a sweep of every mailbox, archiving without printing and reporting counts. |
 | [go/cmd/alter-bridge/purge.go](go/cmd/alter-bridge/purge.go) | Go rewrite: `purge` — no arguments, deletes the archived trail without confirmation or creating the root, bash-parity output. |
 | [go/cmd/alter-bridge/who.go](go/cmd/alter-bridge/who.go) | Go rewrite: `who` — live Claude agents and the 10 most recent Codex threads in bash's format, degrading per provider. |
+| [go/cmd/alter-bridge/hook.go](go/cmd/alter-bridge/hook.go) | Go rewrite: `hook`, the `UserPromptSubmit` entry point — provider or `provider:value` argument, payload session id and `cwd`, `~/agentic-workspace` gate, archiving drain without creating the root. |
 | [go/internal/session/agents.go](go/internal/session/agents.go) | Go rewrite: `ClaudeAgents` reads running interactive sessions from `claude agents --json`, falling back to `~/.local/bin/claude`. |
 <!-- /cumaru:reference -->
