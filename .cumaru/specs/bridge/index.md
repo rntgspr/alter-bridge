@@ -100,11 +100,11 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - `who` reads addressable agents live from each CLI's own state (`claude
   agents --json`, the Codex `state_5.sqlite` threads table) rather than
   caching a roster here, since the CLIs already hold that truth and a second
-  copy would only drift. Observed 2026-09-22 on Claude Code v2.1.280:
-  `claude agents --json` failed with `too many arguments for 'agents'` and
-  only covers background agents, so the bash Claude name lookup
-  (`claude_session_name`, and `who`'s Claude half) likely resolves nothing for
-  interactive sessions.
+  copy would only drift. `claude agents --json` works when the real binary
+  runs (verified on Claude Code 2.1.281: it lists live `kind: interactive`
+  sessions with `sessionId`, `name`, `cwd`); an earlier `too many arguments
+  for 'agents'` failure came from an interactive-shell wrapper function
+  named `claude`, not the CLI.
 - A Go rewrite has started under `go/` (its own module, kept out of the repo
   root so future non-Go tooling can sit alongside it without mixing). The
   first piece is `internal/broker.EnsureRoot`, which resolves and creates the
@@ -156,6 +156,20 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   resolver, same exit codes) and calls `mailbox.Drain` with archiving off, so
   it prints oldest first in `inbox`'s format, byte-identical to bash `peek`,
   and moves nothing.
+- 2026-09 (`maintenance-go-who`): the Go `who` is built but not yet wired into
+  hooks or the skill. Its stdout is byte-identical to bash `who`: Claude rows
+  from `claude agents --json` (`kind == "interactive"`, named only,
+  `%-26s %s  %s` with the `cwd`), then the first 10 Codex threads, named only
+  (`%-26s %s`), archived ones included as in bash. Deviations: the `claude`
+  binary falls back to `~/.local/bin/claude` when absent from `PATH`; the
+  Codex half reuses the `send` resolver's Codex store, so it also falls back
+  to `session_index.jsonl` when `state_5.sqlite` or `sqlite3` is unavailable
+  (that index has no recency, so the 10-row window then shows the
+  oldest-indexed threads); any argument is a usage error (exit 2). An
+  unavailable provider only omits its rows (exit 0, empty stderr), and `who`
+  never creates the mailbox root. The live Claude reader
+  (`session.ClaudeAgents`) is separate from the transcript store used for
+  addressing, which lists every titled session rather than the running ones.
 
 ## Files
 
@@ -166,10 +180,10 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 - [plugin.json](/plugin.json) — Codex plugin manifest.
 - [README.md](/README.md) — install, message flow, and layout docs for the repository.
 - [go/internal/broker/root.go](/go/internal/broker/root.go) — Go rewrite: resolves and guards the mailbox root.
-- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, and `peek` subcommands.
+- [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, `peek`, and `who` subcommands.
 - [go/internal/mailbox/mailbox.go](/go/internal/mailbox/mailbox.go) — Go rewrite: oldest-first mailbox drain with optional bash-parity archiving.
 - [go/internal/address/address.go](/go/internal/address/address.go) — Go rewrite: address parsing and bash-parity slugify.
-- [go/internal/session/](/go/internal/session/) — Go rewrite: session-store readers and id/name-to-slug resolution.
+- [go/internal/session/](/go/internal/session/) — Go rewrite: session-store readers, the live `claude agents --json` reader, and id/name-to-slug resolution.
 - [go/internal/message/message.go](/go/internal/message/message.go) — Go rewrite: message frontmatter and atomic delivery.
 - [go/internal/nudge/nudge.go](/go/internal/nudge/nudge.go) — Go rewrite: best-effort `codex queue` nudge.
 
@@ -195,4 +209,6 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | [go/cmd/alter-bridge/inbox.go](go/cmd/alter-bridge/inbox.go) | Go rewrite: `inbox` — required address, slug resolution, archiving drain; hosts `runDrain`, the argument and resolution path shared with `peek`. |
 | [go/internal/mailbox/mailbox.go](go/internal/mailbox/mailbox.go) | Go rewrite: `Drain` reads a mailbox oldest first, optionally archiving each message under a bash-parity, collision-safe name. |
 | [go/cmd/alter-bridge/peek.go](go/cmd/alter-bridge/peek.go) | Go rewrite: `peek` — `runDrain` with archiving off; prints pending messages and keeps them. |
+| [go/cmd/alter-bridge/who.go](go/cmd/alter-bridge/who.go) | Go rewrite: `who` — live Claude agents and the 10 most recent Codex threads in bash's format, degrading per provider. |
+| [go/internal/session/agents.go](go/internal/session/agents.go) | Go rewrite: `ClaudeAgents` reads running interactive sessions from `claude agents --json`, falling back to `~/.local/bin/claude`. |
 <!-- /cumaru:reference -->
