@@ -49,7 +49,7 @@ Derived from `specs/bridge/index.md` ("Message delivery") and the bash `drain`:
 
 | Task | Title | Depends on | Status |
 |---|---|---|---|
-| T1 | Mailbox drain helper | — | pending |
+| T1 | Mailbox drain helper | — | done |
 | T2 | `inbox` CLI wiring | T1 | pending |
 
 ## Out of scope

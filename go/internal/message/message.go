@@ -31,7 +31,7 @@ var types = map[string]bool{"message": true, "question": true, "result": true, "
 // now and newID are swapped by tests to pin the timestamp and the id sequence.
 var (
 	now   = time.Now
-	newID = randomID
+	newID = RandomID
 )
 
 // ValidType reports whether t is one of message, question, result or ack.
@@ -111,8 +111,9 @@ func frontmatter(m Message, ts, msgid string) string {
 	return b.String()
 }
 
-// randomID returns 8 lowercase hex characters from 4 random bytes.
-func randomID() string {
+// RandomID returns 8 lowercase hex characters from 4 random bytes: a message
+// id, or the suffix that keeps a colliding archived name unique.
+func RandomID() string {
 	var b [4]byte
 	if _, err := rand.Read(b[:]); err != nil {
 		panic(fmt.Sprintf("message: crypto/rand failed: %v", err))
