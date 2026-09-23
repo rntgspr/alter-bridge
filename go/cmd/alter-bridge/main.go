@@ -13,6 +13,7 @@ const usage = `usage: alter-bridge <command> [args]
 commands:
   send    deliver a message into an agent's mailbox (alter-bridge send -h)
   inbox   print and archive an agent's pending messages (alter-bridge inbox -h)
+  peek    print an agent's pending messages without archiving (alter-bridge peek -h)
 `
 
 // main dispatches to the requested subcommand. Environment is read only for
@@ -41,6 +42,16 @@ func main() {
 		root, resolver := setup()
 
 		os.Exit(runInbox(os.Args[2:], inboxEnv{
+			Root:     root,
+			Resolver: resolver,
+			Stdout:   os.Stdout,
+			Stderr:   os.Stderr,
+		}))
+
+	case "peek":
+		root, resolver := setup()
+
+		os.Exit(runPeek(os.Args[2:], inboxEnv{
 			Root:     root,
 			Resolver: resolver,
 			Stdout:   os.Stdout,

@@ -36,7 +36,7 @@ Derived from `specs/bridge/index.md` ("Message delivery") and the bash `drain`:
 
 | Task | Title | Depends on | Status |
 |---|---|---|---|
-| T1 | `peek` CLI wiring on a shared drain runner | — | pending |
+| T1 | `peek` CLI wiring on a shared drain runner | — | done |
 
 ## Out of scope
 
