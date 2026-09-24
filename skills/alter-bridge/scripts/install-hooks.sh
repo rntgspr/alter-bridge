@@ -17,7 +17,13 @@
 # for the bridge path itself: this script gets relocated (e.g. into a plugin
 # directory) more often than the subcommand names change, so existing entries
 # are matched by subcommand alone and their path is repaired in place — never
-# left stale next to a freshly added, correctly pathed duplicate.
+# left stale next to a freshly added, correctly pathed duplicate. That match
+# covers both the legacy `bash "<script>" <sub>` form and the Go
+# `"<bin>" <sub> <provider>` form, so the cutover rewrites bash entries in place.
+#
+# The hooks run the Go binary `bin/alter-bridge` (build it with `go/build.sh`),
+# passing the provider, since the Go entry points take no identity from the
+# environment. The bash script next to this installer is kept as a fallback.
 #
 # This is the only installer either runtime gets — alter-bridge is a plugin on
 # both sides, but plugin-bundled hooks aren't a substitute: Codex does not
@@ -35,9 +41,10 @@ case "$target" in
 esac
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-bridge="$here/alter-bridge"
+repo="$(cd "$here/../../.." && pwd)"
+bridge="$repo/bin/alter-bridge"
 
-[ -f "$bridge" ] || { printf 'install-hooks: alter-bridge not found next to this script (%s)\n' "$here" >&2; exit 1; }
+[ -x "$bridge" ] || { printf 'install-hooks: %s is missing; run go/build.sh first\n' "$bridge" >&2; exit 1; }
 
 # Store the path with $HOME left unexpanded, so the same settings file stays
 # valid on another machine or under a different user. The command runs through a
@@ -57,11 +64,11 @@ home = os.path.expanduser('~')
 def short(path):
     return path.replace(home, '~')
 
-def command(sub):
-    return 'bash "%s" %s' % (bridge, sub)
+def command(sub, provider):
+    return '"%s" %s %s' % (bridge, sub, provider)
 
-def wanted_hook(sub, extra):
-    h = {'type': 'command', 'command': command(sub), 'timeout': 10}
+def wanted_hook(sub, provider, extra):
+    h = {'type': 'command', 'command': command(sub, provider), 'timeout': 10}
     h.update(extra or {})
     return h
 
@@ -70,7 +77,7 @@ def find(groups, sub):
     subcommand alone, since the bridge path drifts across relocations."""
     for group in groups:
         for hook in group.get('hooks', []):
-            m = re.match(r'^bash "(.*)" (\S+)$', hook.get('command', ''))
+            m = re.match(r'^(?:bash )?"(.*)" (\S+)(?: \S+)?$', hook.get('command', ''))
             if m and m.group(2) == sub:
                 return group, hook
     return None, None
@@ -81,7 +88,7 @@ def find(groups, sub):
 # afterwards — on the Codex side a rewrite changes the file's hash and voids its
 # trust, so fixing a cosmetic field would cost a disabled hook until the user
 # approves it again.
-def reconcile(group, hook, matcher, sub):
+def reconcile(group, hook, matcher, sub, provider):
     """Brings an existing entry back in line. Returns what had drifted."""
     drift = []
 
@@ -96,7 +103,7 @@ def reconcile(group, hook, matcher, sub):
         drift.append('type %r -> %r' % (hook.get('type'), 'command'))
         hook['type'] = 'command'
 
-    want_cmd = command(sub)
+    want_cmd = command(sub, provider)
     if hook.get('command') != want_cmd:
         drift.append('command %r -> %r' % (hook.get('command'), want_cmd))
         hook['command'] = want_cmd
@@ -132,12 +139,12 @@ def apply(path, wanted, seed):
     hooks = doc.setdefault('hooks', {})
     changed = False
 
-    for event, matcher, sub, extra in wanted:
+    for event, matcher, sub, provider, extra in wanted:
         groups = hooks.setdefault(event, [])
         group, hook = find(groups, sub)
 
         if group is None:
-            entry = {'hooks': [wanted_hook(sub, extra)]}
+            entry = {'hooks': [wanted_hook(sub, provider, extra)]}
             if matcher is not None:
                 entry = {'matcher': matcher, **entry}
             groups.append(entry)
@@ -145,7 +152,7 @@ def apply(path, wanted, seed):
             print('  %-18s %-16s ADDED' % (event, sub))
             continue
 
-        drift = reconcile(group, hook, matcher, sub)
+        drift = reconcile(group, hook, matcher, sub, provider)
         if drift:
             changed = True
             print('  %-18s %-16s FIXED (%s)' % (event, sub, '; '.join(drift)))
@@ -172,9 +179,9 @@ if target in ('both', 'claude'):
     apply(
         os.path.join(home, '.claude', 'settings.json'),
         [
-            ('SessionStart', None, 'watchpaths', None),
-            ('UserPromptSubmit', None, 'hook', None),
-            ('FileChanged', '.*__from_.*', 'relay', None),
+            ('SessionStart', None, 'watchpaths', 'claude', None),
+            ('UserPromptSubmit', None, 'hook', 'claude', None),
+            ('FileChanged', '.*__from_.*', 'relay', 'claude', None),
         ],
         seed={},
     )
@@ -190,7 +197,7 @@ else:
     # messages, of no bounded size.
     touched = apply(
         os.path.join(codex_dir, 'hooks.json'),
-        [('UserPromptSubmit', None, 'hook', {'additionalContextLimit': 0})],
+        [('UserPromptSubmit', None, 'hook', 'codex', {'additionalContextLimit': 0})],
         seed={'description': 'Inject pending alter-bridge messages into Codex prompts.'},
     )
     if touched:

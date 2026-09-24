@@ -16,19 +16,22 @@ message, delivered by an atomic `mv` into the recipient's directory, archived on
 read. No daemon, no network.
 
 Root: `~/.alter-bridge` (override with `ALTER_BRIDGE_ROOT`).
-Command: `~/agentic-workspace/papa/alter-bridge/skills/alter-bridge/scripts/alter-bridge`
-— the script lives under `skills/`, not `bin/`, so it is not on PATH; call it by
-this absolute path. Provider-agnostic, used by Claude and Codex alike.
+Command: `~/agentic-workspace/papa/alter-bridge/bin/alter-bridge` — the Go
+binary, not on PATH; call it by this absolute path. Provider-agnostic, used by
+Claude and Codex alike. The older bash script,
+`skills/alter-bridge/scripts/alter-bridge`, is kept as a fallback only.
 
-Before first use, run `scripts/install-hooks.sh` once (no argument installs
-both runtimes' hooks) — see the README's Install section.
+Before first use, build the binary with `go/build.sh` and run
+`skills/alter-bridge/scripts/install-hooks.sh` once (no argument installs both
+runtimes' hooks) — see the README's Install section.
 
 Every `alter-bridge <sub>` below is shorthand for that full invocation.
 
 ## Addresses
 
-`provider:slug` — provider is `claude` or `codex`; slug is the stable agent
-name: `claude:pikachu`, `codex:bridge`.
+`provider:slug` — provider is `claude`, `codex`, or `opencode`; slug is the
+agent name: `claude:pikachu`, `codex:bridge`. A session id works as the value
+too and resolves to that session's name.
 
 **A handle in Renato's message is the trigger.** "manda pro codex:bridge dar
 uma olhada nisso" means: send that message through the bridge, now. He does not
@@ -44,45 +47,49 @@ identity because two sessions can share a working directory and only the name
 tells them apart. Names are free text, so they are slugified for the mailbox
 directory (`workspace/fe` becomes `workspace-fe`).
 
-Resolution order: `AGENT_SLUG` (explicit override) → session name → the path
-segment after `agentic-workspace/` (last resort).
+The name is resolved live: a Claude session's `/rename` title, else the
+automatic name `claude agents` shows (which can change when a session resumes —
+`/rename` gives a stable address); a Codex thread's name. A session with no
+name at all is addressed by its id. Two active sessions sharing a name are
+refused; address one by id.
 
-The session id comes from the hook payload; outside a hook the Bash tool exports
-it as `CLAUDE_CODE_SESSION_ID`, so a hand-run `send` signs with the same address
-the hook listens on. Without that, a manual send would sign as one address while
-the session received on another — and replies would land in a mailbox nobody
-reads.
+No environment variable decides identity. The hooks pass the provider and read
+the session id from their payload. Outside a hook, name yourself explicitly with
+your own session id — the Bash tool exports it as `CLAUDE_CODE_SESSION_ID`
+(Codex: `CODEX_THREAD_ID`) — so a hand-run command uses the same mailbox the
+hook drains. Without it, replies would land in a mailbox nobody reads.
 
 ## Sending
 
 ```bash
-echo "body" | alter-bridge send codex:bridge
+echo "body" | alter-bridge send codex:bridge --from "claude:$CLAUDE_CODE_SESSION_ID"
 ```
 
-The body may also come from a file: `... send codex:bridge /tmp/msg.md`.
+`--from` is required (from Codex: `--from "codex:$CODEX_THREAD_ID"`). The body
+may also come from a file: `... send codex:bridge --from ... /tmp/msg.md`.
 
 Options:
 
 - `--type message|question|result|ack` — use `question` when you expect a reply.
 - `--thread <id>` — groups a conversation; reuse the same id for every message.
 - `--in-reply-to <msgid>` — the `msgid` of the message being answered.
-- `--from 'provider:slug'` — only when sending on behalf of someone else.
+- `--from provider:value` — required: the sender, normally this session's own id.
 
 ## Receiving
 
 Pending messages are injected at the top of every turn by the `UserPromptSubmit`
-hook `install-hooks.sh` installs, which runs `alter-bridge hook`. They are
-already archived by the time you see them — act on them directly. That entry
-point reads the harness payload, guards on the working directory (only inside
-`~/agentic-workspace`), registers this session, and drains the mailbox. To check
-by hand:
+hook `install-hooks.sh` installs, which runs `alter-bridge hook claude` (Codex:
+`hook codex`). They are already archived by the time you see them — act on them
+directly. That entry point reads the session id and `cwd` from the harness
+payload, guards on the working directory (only inside `~/agentic-workspace`),
+and drains this session's mailbox. To check by hand:
 
 ```bash
-alter-bridge inbox   # reads and archives
-alter-bridge peek    # reads, keeps them
+alter-bridge inbox "claude:$CLAUDE_CODE_SESSION_ID"   # reads and archives
+alter-bridge peek "claude:$CLAUDE_CODE_SESSION_ID"    # reads, keeps them
 ```
 
-Both take an optional address; without one they resolve this session's own.
+Both require an address.
 
 A message with `type: question` expects a reply — the sender is waiting on it.
 Treat it as open until you send one back (see Replying below). `message`,
@@ -93,12 +100,12 @@ one.
 
 A message landing in the mailbox rings immediately, even with the session idle:
 
-- `SessionStart` runs `alter-bridge watchpaths`, which hands the harness a
+- `SessionStart` runs `alter-bridge watchpaths claude`, which hands the harness a
   `watchPaths` entry for the whole provider directory (`~/.alter-bridge/claude`),
   not for this agent's own mailbox. The address is the session name, so a
   `/rename` moves the mailbox — watching the parent keeps ringing across renames
   and covers mailboxes that do not exist yet.
-- `FileChanged` then fires on every arrival and runs `alter-bridge relay`,
+- `FileChanged` then fires on every arrival and runs `alter-bridge relay claude`,
   which rings only when the arrival landed in *this* session's mailbox, printing
   a one-line `systemMessage` naming the sender and msgid.
 
@@ -140,7 +147,7 @@ Send back to the `from:` address of the message you received, carrying its
 `thread` and putting its `msgid` in `--in-reply-to`:
 
 ```bash
-echo "done" | alter-bridge send codex:bridge --type result --thread demo-1 --in-reply-to 56ded091
+echo "done" | alter-bridge send codex:bridge --from "claude:$CLAUDE_CODE_SESSION_ID" --type result --thread demo-1 --in-reply-to 56ded091
 ```
 
 ## Message format
@@ -179,7 +186,7 @@ conversation gets reconstructed.
 ## Rules
 
 - Never hand-write message files into an agent directory — always go through the
-  script, so delivery stays atomic and the naming stays parseable.
+  CLI, so delivery stays atomic and the naming stays parseable.
 - Reading archives the message. The full trail lives in `~/.alter-bridge/.archive/`;
   reconstruct a conversation by grepping it for a `thread`.
 - Attachments go as relative paths in the body, not as inlined binary.

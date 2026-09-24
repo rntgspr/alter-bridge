@@ -26,19 +26,23 @@ next to the real skills there.
 Being a plugin does not wire up its hooks — Codex does not execute
 plugin-bundled hooks yet ([openai/codex#16430](https://github.com/openai/codex/issues/16430),
 open), so hooks stay installed the same way on both sides: manually, into each
-runtime's global config. From a checkout of this repository, run once:
+runtime's global config. The hooks run the Go binary `bin/alter-bridge`
+(gitignored), so from a checkout of this repository build it, then install:
 
 ```
+go/build.sh
 skills/alter-bridge/scripts/install-hooks.sh
 ```
 
 This installs both runtimes' hooks:
 
 - **Claude** — writes `SessionStart`, `UserPromptSubmit`, and `FileChanged`
-  entries into `~/.claude/settings.json`. These register the mailbox watch
+  entries (`bin/alter-bridge watchpaths claude`, `hook claude`,
+  `relay claude`) into `~/.claude/settings.json`. These register the mailbox watch
   paths, drain pending messages into each turn, and wake the session when a
   message lands.
-- **Codex** — writes a `UserPromptSubmit` hook to `~/.codex/hooks.json`, backing
+- **Codex** — writes a `UserPromptSubmit` hook (`bin/alter-bridge hook codex`)
+  to `~/.codex/hooks.json`, backing
   the file up before any rewrite. Codex tracks per-hook trust in `config.toml`,
   so a newly written hook needs to be approved there before it runs — the
   script says so when it writes. Skipped if `~/.codex` does not exist.
@@ -51,8 +55,13 @@ skills/alter-bridge/scripts/install-hooks.sh codex
 ```
 
 Re-running is safe. An entry already pointing at one of our commands is
-reconciled rather than duplicated, and a file with nothing to change is not
-rewritten at all.
+reconciled rather than duplicated — including an older entry that still runs
+the bash script, which is rewritten to the Go binary in place — and a file with
+nothing to change is not rewritten at all.
+
+The bash script `skills/alter-bridge/scripts/alter-bridge` is kept as a
+fallback. To go back to it, restore the `.bak.<timestamp>` copies the installer
+left next to each settings file.
 
 ## How a message travels
 
@@ -86,7 +95,9 @@ watcher is gone.
 plugin.json                            Codex manifest
 .claude-plugin/plugin.json             Claude manifest
 skills/alter-bridge/SKILL.md           how an agent is meant to use it
-skills/alter-bridge/scripts/alter-bridge       the whole bridge
+go/                                    the bridge CLI (Go); go/build.sh builds bin/alter-bridge
+bin/alter-bridge                       the built binary the hooks and the skill call (gitignored)
+skills/alter-bridge/scripts/alter-bridge       the original bash bridge, kept as fallback
 skills/alter-bridge/scripts/install-hooks.sh   installs/reconciles hooks in both runtimes
 ```
 
