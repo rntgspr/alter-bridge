@@ -1,1 +1,5 @@
 bin/
+
+# Release builds (go/release.sh)
+go/alter-bridge-*
+dist/

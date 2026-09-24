@@ -71,7 +71,7 @@ release-based install. Reconcile T3 before either plan is absorbed.
 
 | Task | Title | Status | Depends on |
 |------|-------|--------|-----------|
-| [T1](t1.md) | Builder `go/release.sh` and launcher | pending | — |
+| [T1](t1.md) | Builder `go/release.sh` and launcher | done | — |
 | [T2](t2.md) | Root release workflow | pending | T1 |
 | [T3](t3.md) | Hooks, marketplace `archive` source, docs | pending | T1 |
 | [T4](t4.md) | First release and live Claude cutover (Renato-gated) | pending | T2, T3 |

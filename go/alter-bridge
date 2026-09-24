@@ -1,0 +1,30 @@
+#!/bin/sh
+# Runs the alter-bridge binary built for this host (go/alter-bridge-<os>-<arch>,
+# written by go/release.sh) with the given arguments. With no matching binary it
+# prints one line to stderr and exits 0, because a hook must never block the
+# prompt.
+#
+# Usage: go/alter-bridge <subcommand> [args...]
+set -eu
+
+dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+
+case "$(uname -s)" in
+  Darwin) os=darwin ;;
+  Linux) os=linux ;;
+  *) os=unknown ;;
+esac
+
+case "$(uname -m)" in
+  arm64 | aarch64) arch=arm64 ;;
+  x86_64 | amd64) arch=amd64 ;;
+  *) arch=unknown ;;
+esac
+
+bin="$dir/alter-bridge-$os-$arch"
+if [ -x "$bin" ]; then
+  exec "$bin" "$@"
+fi
+
+echo "alter-bridge: no binary for $(uname -s)/$(uname -m) ($bin), skipped" >&2
+exit 0
