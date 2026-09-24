@@ -14,8 +14,10 @@ summary: Hand-off for maintenance-go-cutover T1 — identity gate failed on auto
 <!-- cumaru:touched -->
 | Link | Description |
 |------|-------------|
-| [`index.md`](index.md) | modified — Blocker recorded, then marked resolved (option A) |
 <!-- /cumaru:touched -->
+
+No repository source file; only this plan's `index.md` (Blocker recorded,
+then marked resolved with option A).
 
 ## Decisions made during implementation
 

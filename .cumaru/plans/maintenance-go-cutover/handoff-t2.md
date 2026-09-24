@@ -14,9 +14,9 @@ summary: Hand-off for maintenance-go-cutover T2 — installer, SKILL.md and READ
 <!-- cumaru:touched -->
 | Link | Description |
 |------|-------------|
-| [`skills/alter-bridge/scripts/install-hooks.sh`](../../../skills/alter-bridge/scripts/install-hooks.sh) | modified — wires `"<repo>/bin/alter-bridge" <sub> <provider>`, refuses a missing binary, matches bash and Go forms by subcommand |
-| [`skills/alter-bridge/SKILL.md`](../../../skills/alter-bridge/SKILL.md) | modified — Go binary as the command, `--from` / address usage, live name resolution, bash as fallback |
-| [`README.md`](../../../README.md) | modified — build step, wired commands, bash fallback, layout |
+| [`skills/alter-bridge/scripts/install-hooks.sh`](skills/alter-bridge/scripts/install-hooks.sh) | modified — wires `"<repo>/bin/alter-bridge" <sub> <provider>`, refuses a missing binary, matches bash and Go forms by subcommand |
+| [`skills/alter-bridge/SKILL.md`](skills/alter-bridge/SKILL.md) | modified — Go binary as the command, `--from` / address usage, live name resolution, bash as fallback |
+| [`README.md`](README.md) | modified — build step, wired commands, bash fallback, layout |
 <!-- /cumaru:touched -->
 
 ## Decisions made during implementation

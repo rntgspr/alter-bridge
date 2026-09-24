@@ -14,9 +14,11 @@ summary: Hand-off for maintenance-go-cutover T3 — live Claude and Codex hooks 
 <!-- cumaru:touched -->
 | Link | Description |
 |------|-------------|
-| `~/.claude/settings.json` | modified outside the repo — three alter-bridge command strings; backup `settings.json.bak.20260923211158` |
-| `~/.codex/hooks.json` | modified outside the repo — one alter-bridge command string; backup `hooks.json.bak.20260923211158` |
 <!-- /cumaru:touched -->
+
+No repository file. Outside the repo: `~/.claude/settings.json` (three
+alter-bridge command strings; backup `settings.json.bak.20260923211158`) and
+`~/.codex/hooks.json` (one command string; backup `hooks.json.bak.20260923211158`).
 
 ## Decisions made during implementation
 
