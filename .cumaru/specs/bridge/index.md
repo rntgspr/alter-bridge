@@ -26,12 +26,14 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 
 ### Addressing
 
-- An address MUST take the form `provider:slug`, with `provider` being
-  `claude` or `codex`.
+- An address MUST take the form `provider:value`, with `provider` being
+  `claude`, `codex`, or `opencode`, and `value` a session name or id.
 - A leading `#` on an address MUST be accepted and stripped before parsing.
-- WHEN a session's own address is resolved THE SYSTEM SHALL use, in order:
-  an explicit `AGENT_SLUG` override, the session name, then the path segment
-  after `agentic-workspace/` as the last resort.
+- A session's own address MUST come from an explicit `provider:value` — the
+  hook payload's session id for the hook entry points, `--from` for `send`,
+  the argument for `inbox` / `peek` — and never from an environment variable
+  or the working directory (see the `maintenance-go-send` and
+  `maintenance-go-agent-names` Decisions for name resolution).
 - Session names MUST be slugified for use as a mailbox directory name (e.g.
   `workspace/fe` becomes `workspace-fe`).
 
@@ -104,9 +106,14 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   hook entries directly into each runtime's global config
   (`~/.claude/settings.json`, `~/.codex/hooks.json`), backing up the Codex
   file before any rewrite.
+- `install-hooks.sh` MUST wire the Go binary with the provider argument —
+  `"$HOME/.../bin/alter-bridge" watchpaths claude`, `... hook claude`,
+  `... relay claude` (matcher `.*__from_.*`), and `... hook codex` — and MUST
+  refuse (exit 1) when `bin/alter-bridge` is missing.
 - Re-running `install-hooks.sh` MUST be safe: an entry already pointing at one
-  of the bridge's own commands is reconciled in place rather than duplicated,
-  and a file with nothing to change is left unwritten.
+  of the bridge's own commands, in either the legacy `bash "<script>" <sub>`
+  form or the Go `"<bin>" <sub> <provider>` form, is reconciled in place
+  rather than duplicated, and a file with nothing to change is left unwritten.
 - `install-hooks.sh` MAY be scoped to one runtime via a `claude` or `codex`
   argument; with no argument it SHALL install both.
 
@@ -116,9 +123,10 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   monorepo into its own repository; root `plugin.json` restored for Codex
   discovery and repository URLs repointed. Reflects a packaging move, not a
   behavior change.
-- The bridge script lives under `skills/alter-bridge/scripts/`, not `bin/`,
-  so it is deliberately off `PATH` — every caller invokes it by absolute
-  path, keeping the mailbox tool scoped to the skill that documents its use.
+- The bridge CLI is deliberately off `PATH` — every caller invokes it by
+  absolute path, keeping the mailbox tool scoped to the skill that documents
+  its use. Originally the bash script under `skills/alter-bridge/scripts/`;
+  since `maintenance-go-cutover`, `bin/alter-bridge`.
 - `who` reads addressable agents live from each CLI's own state (`claude
   agents --json`, the Codex `state_5.sqlite` threads table) rather than
   caching a roster here, since the CLIs already hold that truth and a second
@@ -260,11 +268,27 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   subprocess per store read, as bash did. Automatic names can change when a
   session resumes (`alter-bridge-ef` became `alter-bridge-11`); bash and Go
   both follow the current name. Codex and OpenCode resolution is unchanged.
+- 2026-09 (`maintenance-go-cutover`): Go is canonical. The live hooks, the
+  installer, `SKILL.md`, and `README.md` call `bin/alter-bridge` (built by
+  `go/build.sh`; `bin/` is gitignored, so a checkout must build before
+  installing) with the provider argument; the "built but not yet wired"
+  notes in the per-command Go decisions above are superseded, and those
+  decisions' deviations from bash are now the live behavior. The bash script
+  is kept, unwired, as a fallback; returning to it means restoring the
+  `.bak.<timestamp>` copies the installer (or the cutover) left next to each
+  settings file. Before cutover, bash and Go were fed the same SessionStart
+  payload for every live Claude and Codex session and registered the same
+  mailbox. Residual risks: automatic Claude names change when a session
+  resumes (`/rename` is the stable fix, as with bash); a changed Codex hook
+  stays disabled until its trust is re-approved inside Codex; the Codex
+  payload's id fields (`session_id` / `thread_id` / `threadId`) are not yet
+  verified against a live Codex turn.
 
 ## Files
 
-- [skills/alter-bridge/scripts/alter-bridge](/skills/alter-bridge/scripts/alter-bridge) — the CLI: addressing, `send`, `inbox`/`peek`, `hook`, `watchpaths`, `relay`, `archive`, `purge`, `who`.
-- [skills/alter-bridge/scripts/install-hooks.sh](/skills/alter-bridge/scripts/install-hooks.sh) — installs/reconciles hooks in `~/.claude/settings.json` and `~/.codex/hooks.json`.
+- [skills/alter-bridge/scripts/alter-bridge](/skills/alter-bridge/scripts/alter-bridge) — the original bash CLI, kept unwired as a fallback: addressing, `send`, `inbox`/`peek`, `hook`, `watchpaths`, `relay`, `archive`, `purge`, `who`.
+- [go/build.sh](/go/build.sh) — builds the canonical binary `bin/alter-bridge` (gitignored) that the hooks and the skill call.
+- [skills/alter-bridge/scripts/install-hooks.sh](/skills/alter-bridge/scripts/install-hooks.sh) — installs/reconciles the Go-binary hooks in `~/.claude/settings.json` and `~/.codex/hooks.json`, rewriting legacy bash entries in place.
 - [skills/alter-bridge/SKILL.md](/skills/alter-bridge/SKILL.md) — how an agent is meant to use the bridge (addressing, sending, replying, rules).
 - [.claude-plugin/plugin.json](/.claude-plugin/plugin.json) — Claude plugin manifest.
 - [plugin.json](/plugin.json) — Codex plugin manifest.
@@ -282,9 +306,10 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 <!-- cumaru:reference -->
 | Link | Description |
 |------|-------------|
-| [alter-bridge](skills/alter-bridge/scripts/alter-bridge) | Mailbox CLI: address parsing, atomic send, drain/archive, hook entry points, doorbell relay, roster lookup. |
-| [install-hooks.sh](skills/alter-bridge/scripts/install-hooks.sh) | Installs/reconciles the Claude and Codex hook wiring that drives delivery and the doorbell. |
-| [SKILL.md](skills/alter-bridge/SKILL.md) | Agent-facing usage contract for the bridge. |
+| [alter-bridge](skills/alter-bridge/scripts/alter-bridge) | Original bash mailbox CLI, kept unwired as a fallback: address parsing, atomic send, drain/archive, hook entry points, doorbell relay, roster lookup. |
+| [go/build.sh](go/build.sh) | Builds the canonical Go binary `bin/alter-bridge` (gitignored) that the hooks and the skill call. |
+| [install-hooks.sh](skills/alter-bridge/scripts/install-hooks.sh) | Installs/reconciles the Claude and Codex hook wiring to `bin/alter-bridge <sub> <provider>`, refusing a missing binary and rewriting legacy bash entries in place. |
+| [SKILL.md](skills/alter-bridge/SKILL.md) | Agent-facing usage contract for the bridge, written against the Go CLI (`--from`, explicit addresses). |
 | [.claude-plugin/plugin.json](.claude-plugin/plugin.json) | Claude-side plugin manifest. |
 | [plugin.json](plugin.json) | Codex-side plugin manifest. |
 | [README.md](README.md) | Install steps, message-flow walkthrough, layout, and the known `FileChanged` rough edge. |
