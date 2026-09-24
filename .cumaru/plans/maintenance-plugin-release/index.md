@@ -73,7 +73,7 @@ release-based install. Reconcile T3 before either plan is absorbed.
 |------|-------|--------|-----------|
 | [T1](t1.md) | Builder `go/release.sh` and launcher | done | — |
 | [T2](t2.md) | Root release workflow | done | T1 |
-| [T3](t3.md) | Hooks, marketplace `archive` source, docs | pending | T1 |
+| [T3](t3.md) | Hooks, marketplace `archive` source, docs | blocked | T1 |
 | [T4](t4.md) | First release and live Claude cutover (Renato-gated) | pending | T2, T3 |
 
 ## Out of scope
@@ -97,3 +97,8 @@ release-based install. Reconcile T3 before either plan is absorbed.
 - **Double hooks during cutover:** the release plugin's hooks and the manual
   settings hooks must not overlap. This is the same ordering risk recorded in
   `maintenance-plugin-standard`.
+- **Codex reads the Claude marketplace (observed, blocks T3/T4):** codex-cli
+  0.156.1 cannot resolve an `archive` source in `.claude-plugin/marketplace.json`,
+  so the switch (T3) and the workflow's rewrite (T2) break the Codex install.
+  Evidence and options are in [handoff-t3](handoff-t3.md). No tag may be pushed
+  until Renato decides.

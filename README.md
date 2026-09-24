@@ -13,43 +13,65 @@ on the recipient being awake, and the message waits as long as it has to.
 
 ## Install
 
-alter-bridge is a plugin on both runtimes, installed through each CLI from
-this repository's own marketplace (`.claude-plugin/marketplace.json`, which
-Claude Code reads natively and Codex reads as its legacy-compatible
-marketplace). The hooks ship inside the plugin, so nothing is written into
-global settings by hand. From a checkout:
+alter-bridge is a plugin on both runtimes, and its hooks ship inside the
+plugin, so nothing is written into global settings by hand.
+
+### Claude Code
+
+Install it through the standard marketplace flow, straight from GitHub:
+
+```
+/plugin marketplace add rntgspr/alter-bridge
+/plugin install alter-bridge@alter-bridge
+```
+
+You need no checkout and no Go toolchain. The release workflow makes the
+`alter-bridge` entry in `.claude-plugin/marketplace.json` an `archive` source.
+That source points at the zip attached to the latest GitHub Release and pins
+that zip's `sha256`. Pushing a
+`v*` tag runs `.github/workflows/release.yml`. The workflow calls
+`go/release.sh`, which cross-compiles the CLI into `go/alter-bridge-<os>-<arch>`
+and packs the plugin tree into a zip. The workflow then publishes the release
+and commits the new `url` and `sha256` to the marketplace entry.
+
+`hooks/hooks.json` wires `SessionStart`, `UserPromptSubmit`, and `FileChanged`
+(`watchpaths claude`, `hook claude`, `relay claude`). Those hooks register the
+mailbox watch paths, drain pending messages into each turn, and wake the
+session when a message lands. Each hook calls the launcher `go/alter-bridge`,
+which runs the binary built for the host. On a host with no matching binary,
+the launcher prints one line to stderr and exits 0, so a prompt is never
+blocked. A session that was already running when the plugin was installed needs
+`/reload-plugins`. To pick up a new release, run `/plugin marketplace update`.
+
+Local development runs the plugin from a checkout, with no install:
+
+```
+go/release.sh            # builds go/alter-bridge-<os>-<arch> (gitignored) and dist/*.zip
+claude --plugin-dir .
+```
+
+### Codex
+
+From a checkout:
 
 ```
 ./install.sh
 ```
 
 It builds the Go binary `bin/alter-bridge` (gitignored) with `go/build.sh`,
-then runs, for each CLI that is present:
+then runs:
 
 ```
-claude plugin marketplace add <checkout>
-claude plugin install alter-bridge@alter-bridge
 codex plugin marketplace add <checkout>
 codex plugin add alter-bridge@alter-bridge
 ```
 
-What each runtime gets:
-
-- **Claude**: `hooks/hooks.json`: `SessionStart`, `UserPromptSubmit`, and
-  `FileChanged` (`watchpaths claude`, `hook claude`, `relay claude`), which
-  register the mailbox watch paths, drain pending messages into each turn,
-  and wake the session when a message lands. The plugin loads in place from
-  the checkout, so a rebuild or an edit applies at the next session start or
-  `/reload-plugins`. A session that was already running when the plugin was
-  installed needs `/reload-plugins` too. While the plugin is enabled its
-  `bin/` is on the Bash tool's `PATH`.
-- **Codex**: `hooks/codex.json`, declared by `.codex-plugin/plugin.json`:
-  `UserPromptSubmit` (`hook codex`). Codex skips a plugin hook until you
-  trust it, so open `/hooks` in Codex and trust the alter-bridge hook once
-  (again whenever its definition changes). Codex runs a cached copy of the
-  checkout, so re-run `./install.sh` after rebuilding or editing.
-
-Re-running `./install.sh` is safe.
+Codex gets `hooks/codex.json`, which `.codex-plugin/plugin.json` declares:
+`UserPromptSubmit` (`hook codex`). Codex skips a plugin hook until you trust
+it, so open `/hooks` in Codex and trust the alter-bridge hook once, and again
+whenever its definition changes. Codex runs a cached copy of the checkout, so
+re-run `./install.sh` after you rebuild or edit anything. Re-running it is
+safe.
 
 The bash script `skills/alter-bridge/scripts/alter-bridge` is kept, unwired,
 as a fallback.
@@ -84,14 +106,17 @@ watcher is gone.
 
 ```
 .claude-plugin/plugin.json             Claude manifest
-.claude-plugin/marketplace.json        the marketplace both CLIs install from
+.claude-plugin/marketplace.json        the marketplace both CLIs install from (Claude: archive source)
 .codex-plugin/plugin.json              Codex manifest (declares hooks/codex.json)
-hooks/hooks.json                       Claude hooks
-hooks/codex.json                       Codex hooks
-install.sh                             builds the binary and installs the plugin on both CLIs
+.github/workflows/release.yml          on v* tags: build, publish the release zip, update the marketplace
+hooks/hooks.json                       Claude hooks (call go/alter-bridge)
+hooks/codex.json                       Codex hooks (call bin/alter-bridge)
+install.sh                             builds bin/alter-bridge and installs the plugin on Codex
 skills/alter-bridge/SKILL.md           how an agent is meant to use it
 go/                                    the bridge CLI (Go); go/build.sh builds bin/alter-bridge
-bin/alter-bridge                       the built binary the hooks and the skill call (gitignored)
+go/release.sh                          builds go/alter-bridge-<os>-<arch> and the release zip in dist/
+go/alter-bridge                        launcher: runs the go/ binary for the host
+bin/alter-bridge                       the local binary Codex and the skill call (gitignored)
 skills/alter-bridge/scripts/alter-bridge       the original bash bridge, kept as fallback
 ```
 

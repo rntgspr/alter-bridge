@@ -17,14 +17,15 @@ read. No daemon, no network.
 
 Root: `~/.alter-bridge` (override with `ALTER_BRIDGE_ROOT`).
 Command: `~/agentic-workspace/papa/alter-bridge/bin/alter-bridge` — the Go
-binary; call it by this absolute path, which works on both runtimes (Claude
-also has it on the Bash `PATH` while the plugin is enabled). Provider-agnostic,
+binary built by `go/build.sh`; call it by this absolute path, which works on
+both runtimes. Provider-agnostic,
 used by Claude and Codex alike. The older bash script,
 `skills/alter-bridge/scripts/alter-bridge`, is kept as a fallback only.
 
-Before first use, run `./install.sh` from the checkout: it builds the binary and
-installs the plugin, hooks included, on both runtimes — see the README's Install
-section.
+Before first use, install the plugin, hooks included. On Claude Code, run
+`/plugin marketplace add rntgspr/alter-bridge` and then
+`/plugin install alter-bridge@alter-bridge`. On Codex, run `./install.sh` from the
+checkout. The README's Install section has the details.
 
 Every `alter-bridge <sub>` below is shorthand for that full invocation.
 

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Builds bin/alter-bridge and installs this checkout as the alter-bridge plugin
-# on Claude Code and Codex, through the repository's own marketplace
-# (.claude-plugin/marketplace.json, read by both CLIs). Re-running is safe and
-# is how a rebuilt binary reaches Codex, which runs a cached copy.
+# on Codex, through the repository's own marketplace
+# (.claude-plugin/marketplace.json, which Codex reads as its legacy-compatible
+# marketplace). Re-running is safe and is how a rebuilt binary reaches Codex,
+# which runs a cached copy. Claude Code installs from the GitHub Release zip
+# instead; see the README.
 #
 # Usage: install.sh
 set -euo pipefail
@@ -10,13 +12,6 @@ set -euo pipefail
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 "$repo/go/build.sh"
-
-if command -v claude >/dev/null; then
-  claude plugin marketplace add "$repo"
-  claude plugin install alter-bridge@alter-bridge
-else
-  echo "install: claude not found, skipped"
-fi
 
 if command -v codex >/dev/null; then
   codex plugin marketplace add "$repo"
