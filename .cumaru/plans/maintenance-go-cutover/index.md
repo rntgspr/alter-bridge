@@ -1,8 +1,8 @@
 ---
 human_revised: false
 scope: [bridge]
-status: blocked
-summary: Cut the live bridge over from the bash script to the Go binary `bin/alter-bridge` — docs, `install-hooks.sh`, and the live Claude/Codex hook wiring — keeping bash as fallback; blocked on an identity mismatch that would orphan auto-named Claude sessions' mailboxes.
+status: in-progress
+summary: Cut the live bridge over from the bash script to the Go binary `bin/alter-bridge` — docs, `install-hooks.sh`, and the live Claude/Codex hook wiring — keeping bash as fallback.
 targets: [cli, hooks, skill]
 aux: []
 ---
@@ -37,11 +37,18 @@ an address).
 
 | Task | Title | Depends on | Status |
 |---|---|---|---|
-| [T1](t1.md) | Identity continuity gate: Go resolver vs `who` names for live sessions | — | blocked |
-| [T2](t2.md) | Repo cutover: rebuild, `SKILL.md`, `README.md`, `install-hooks.sh` | T1 | pending |
-| [T3](t3.md) | Live rewiring of `~/.claude/settings.json` and `~/.codex/hooks.json`, with backups and scratch verification | T2 | pending |
+| [T1](t1.md) | Identity continuity gate: Go resolver vs `who` names for live sessions | — | done |
+| [T2](t2.md) | Repo cutover: rebuild, `SKILL.md`, `README.md`, `install-hooks.sh` | T1 | done |
+| [T3](t3.md) | Live rewiring of `~/.claude/settings.json` and `~/.codex/hooks.json`, with backups and scratch verification | T2 | done |
 
-## Blocker (T1, 2026-09-23)
+## Blocker (T1, 2026-09-23) — resolved
+
+**Resolution:** Renato chose option A. `maintenance-go-agent-names`
+(`69f04b8`..`3ce2055`) made the Go Claude resolver fall back to the live
+`claude agents --json` name; the re-run gate (see `handoff-t1.md`) shows bash
+and Go registering the same mailbox for every live Claude and Codex session.
+The original finding follows for the record.
+
 
 AC6 fails on evidence, before any live file was touched:
 
