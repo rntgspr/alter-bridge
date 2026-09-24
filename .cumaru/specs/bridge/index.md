@@ -154,7 +154,8 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
     titled session counts). Two or more active sessions sharing a name refuse
     delivery and list their ids so the caller addresses one by id.
   - Session state is read live: Claude `custom-title` entries in
-    `~/.claude/projects/*/<id>.jsonl`, Codex `state_5.sqlite` (fallback
+    `~/.claude/projects/*/<id>.jsonl`, else the live `claude agents --json`
+    name for that id (see `maintenance-go-agent-names`), Codex `state_5.sqlite` (fallback
     `session_index.jsonl`), OpenCode `opencode.db` `title`, through the
     `sqlite3` CLI in `mode=ro` so the binary carries no SQLite driver.
   - `--type` is validated against `message | question | result | ack`, and an
@@ -190,8 +191,8 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   oldest-indexed threads); any argument is a usage error (exit 2). An
   unavailable provider only omits its rows (exit 0, empty stderr), and `who`
   never creates the mailbox root. The live Claude reader
-  (`session.ClaudeAgents`) is separate from the transcript store used for
-  addressing, which lists every titled session rather than the running ones.
+  (`session.ClaudeAgents`) is also merged into the transcript store used for
+  addressing (see `maintenance-go-agent-names`).
 - 2026-09 (`maintenance-go-archive`): the Go `archive` is built but not yet
   wired into hooks or the skill. It archives through the same
   `internal/mailbox` loop and `archiveOne` as `inbox` (`mailbox.Archive`, a
@@ -220,8 +221,8 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   `provider:value`, both resolved through the `send`/`inbox` session resolver
   and drained with `mailbox.Drain`. No environment variable picks the
   provider or slug, and a payload without a session id drains nothing (exit
-  0) instead of falling back to the cwd segment, so an unnamed session's
-  mailbox is keyed by its id. The root comes from `broker.Resolve` (never
+  0) instead of falling back to the cwd segment, so a session with neither a
+  title nor a live agent name has its mailbox keyed by its id. The root comes from `broker.Resolve` (never
   created). Stdout and the resulting tree are byte-identical to bash for an
   explicit address inside and outside the workspace, a missing mailbox, and
   an absent root. Payload problems (empty, not JSON, non-string fields) are
@@ -244,6 +245,21 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   Deviations: argument errors exit 2 even outside the workspace, ambiguous or
   empty slugs exit 1, and paths are `filepath.Join`-cleaned. Cutover must
   pass the provider in the SessionStart wiring.
+- 2026-09 (`maintenance-go-agent-names`): the Go Claude session store names a
+  session by its transcript `custom-title`, else by the name
+  `claude agents --json` reports for that `sessionId` (the automatic name of
+  a session never `/rename`d, e.g. `alter-bridge-11`), and also lists running
+  sessions that have no transcript yet. Id -> name and name -> id both go
+  through the unchanged resolver, so a titled transcript and a live agent
+  sharing a name are ambiguous like any two active sessions. A missing or
+  failing `claude` binary (absent, non-zero exit, invalid JSON) leaves
+  transcript titles only, with no error. This restores bash parity: fed the
+  same SessionStart payload for a live unrenamed session, bash `watchpaths`
+  and Go `watchpaths claude` register the same `claude/<automatic-name>`
+  mailbox, which Go `hook claude` drains. Costs one `claude agents`
+  subprocess per store read, as bash did. Automatic names can change when a
+  session resumes (`alter-bridge-ef` became `alter-bridge-11`); bash and Go
+  both follow the current name. Codex and OpenCode resolution is unchanged.
 
 ## Files
 
