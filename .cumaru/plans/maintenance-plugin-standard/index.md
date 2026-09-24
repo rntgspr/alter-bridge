@@ -1,7 +1,7 @@
 ---
 human_revised: false
 scope: [bridge]
-status: in-progress
+status: blocked
 summary: Package alter-bridge as a standard Claude Code and Codex plugin installed from the repository's own marketplace, with each runtime's hooks bundled in the plugin instead of hand-written into global config, then cut the live machine over.
 targets: [plugin, hooks]
 aux: []
