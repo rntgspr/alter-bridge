@@ -13,7 +13,10 @@ import (
 )
 
 // claudeStore reads Claude Code transcripts: each ~/.claude/projects/*/<id>.jsonl
-// is one session, named by its latest custom-title entry. Claude records no
+// is one session, named by its latest custom-title entry, else by the name
+// `claude agents --json` shows for it (the automatic name of a session never
+// renamed). Running sessions with no transcript yet are appended. When the
+// claude binary fails, only transcript titles are used. Claude records no
 // archive state, so every session is reported active.
 func claudeStore(home string) Store {
 	return func() ([]Session, error) {
@@ -22,13 +25,33 @@ func claudeStore(home string) Store {
 			return nil, err
 		}
 
-		sessions := make([]Session, 0, len(files))
+		agents, _ := ClaudeAgents(home)
+		live := make(map[string]string, len(agents))
+		for _, a := range agents {
+			live[a.ID] = a.Name
+		}
+
+		sessions := make([]Session, 0, len(files)+len(agents))
+		seen := make(map[string]bool, len(files))
 		for _, f := range files {
 			name, err := claudeTitle(f)
 			if err != nil {
 				continue
 			}
-			sessions = append(sessions, Session{ID: strings.TrimSuffix(filepath.Base(f), ".jsonl"), Name: name})
+
+			id := strings.TrimSuffix(filepath.Base(f), ".jsonl")
+			if name == "" {
+				name = live[id]
+			}
+			sessions = append(sessions, Session{ID: id, Name: name})
+			seen[id] = true
+		}
+
+		for _, a := range agents {
+			if !seen[a.ID] {
+				sessions = append(sessions, Session{ID: a.ID, Name: a.Name})
+				seen[a.ID] = true
+			}
 		}
 
 		return sessions, nil
