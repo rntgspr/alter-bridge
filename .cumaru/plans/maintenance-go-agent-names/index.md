@@ -46,8 +46,8 @@ which bash cannot resolve at all.
 
 | Task | Title | Depends on | Status |
 |---|---|---|---|
-| [T1](t1.md) | Merge live `claude agents` names into the Claude store (TDD) | — | pending |
-| [T2](t2.md) | Rebuild and prove bash-vs-Go parity for a live unrenamed session in scratch | T1 | pending |
+| [T1](t1.md) | Merge live `claude agents` names into the Claude store (TDD) | — | done |
+| [T2](t2.md) | Rebuild and prove bash-vs-Go parity for a live unrenamed session in scratch | T1 | done |
 
 ## Out of scope
 
