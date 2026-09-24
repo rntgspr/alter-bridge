@@ -1,0 +1,17 @@
+{
+  "description": "alter-bridge delivery for Codex: drain pending messages into each prompt.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${PLUGIN_ROOT}/bin/alter-bridge\" hook codex",
+            "timeout": 10,
+            "additionalContextLimit": 0
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -13,55 +13,46 @@ on the recipient being awake, and the message waits as long as it has to.
 
 ## Install
 
-alter-bridge is a plugin on both sides (`.claude-plugin/plugin.json` for
-Claude, `plugin.json` for Codex — see [Layout](#layout)), installed via
-`install.sh` at the repo root through each runtime's own local marketplace
-(`plugins/.claude-plugin/marketplace.json`): `claude plugin install
-alter-bridge@agents-marketplace` for Claude, `codex plugin add
-alter-bridge@agents-marketplace` for Codex. Neither is symlinked into a
-skills directory — that was the first approach and it worked, but it left the
-plugin looking like a plain skill in `~/.claude/skills/`, which was confusing
-next to the real skills there.
-
-Being a plugin does not wire up its hooks — Codex does not execute
-plugin-bundled hooks yet ([openai/codex#16430](https://github.com/openai/codex/issues/16430),
-open), so hooks stay installed the same way on both sides: manually, into each
-runtime's global config. The hooks run the Go binary `bin/alter-bridge`
-(gitignored), so from a checkout of this repository build it, then install:
+alter-bridge is a plugin on both runtimes, installed through each CLI from
+this repository's own marketplace (`.claude-plugin/marketplace.json`, which
+Claude Code reads natively and Codex reads as its legacy-compatible
+marketplace). The hooks ship inside the plugin, so nothing is written into
+global settings by hand. From a checkout:
 
 ```
-go/build.sh
-skills/alter-bridge/scripts/install-hooks.sh
+./install.sh
 ```
 
-This installs both runtimes' hooks:
-
-- **Claude** — writes `SessionStart`, `UserPromptSubmit`, and `FileChanged`
-  entries (`bin/alter-bridge watchpaths claude`, `hook claude`,
-  `relay claude`) into `~/.claude/settings.json`. These register the mailbox watch
-  paths, drain pending messages into each turn, and wake the session when a
-  message lands.
-- **Codex** — writes a `UserPromptSubmit` hook (`bin/alter-bridge hook codex`)
-  to `~/.codex/hooks.json`, backing
-  the file up before any rewrite. Codex tracks per-hook trust in `config.toml`,
-  so a newly written hook needs to be approved there before it runs — the
-  script says so when it writes. Skipped if `~/.codex` does not exist.
-
-Pass `claude` or `codex` to install one side only:
+It builds the Go binary `bin/alter-bridge` (gitignored) with `go/build.sh`,
+then runs, for each CLI that is present:
 
 ```
-skills/alter-bridge/scripts/install-hooks.sh claude
-skills/alter-bridge/scripts/install-hooks.sh codex
+claude plugin marketplace add <checkout>
+claude plugin install alter-bridge@alter-bridge
+codex plugin marketplace add <checkout>
+codex plugin add alter-bridge@alter-bridge
 ```
 
-Re-running is safe. An entry already pointing at one of our commands is
-reconciled rather than duplicated — including an older entry that still runs
-the bash script, which is rewritten to the Go binary in place — and a file with
-nothing to change is not rewritten at all.
+What each runtime gets:
 
-The bash script `skills/alter-bridge/scripts/alter-bridge` is kept as a
-fallback. To go back to it, restore the `.bak.<timestamp>` copies the installer
-left next to each settings file.
+- **Claude**: `hooks/hooks.json`: `SessionStart`, `UserPromptSubmit`, and
+  `FileChanged` (`watchpaths claude`, `hook claude`, `relay claude`), which
+  register the mailbox watch paths, drain pending messages into each turn,
+  and wake the session when a message lands. The plugin loads in place from
+  the checkout, so a rebuild or an edit applies at the next session start or
+  `/reload-plugins`. A session that was already running when the plugin was
+  installed needs `/reload-plugins` too. While the plugin is enabled its
+  `bin/` is on the Bash tool's `PATH`.
+- **Codex**: `hooks/codex.json`, declared by `.codex-plugin/plugin.json`:
+  `UserPromptSubmit` (`hook codex`). Codex skips a plugin hook until you
+  trust it, so open `/hooks` in Codex and trust the alter-bridge hook once
+  (again whenever its definition changes). Codex runs a cached copy of the
+  checkout, so re-run `./install.sh` after rebuilding or editing.
+
+Re-running `./install.sh` is safe.
+
+The bash script `skills/alter-bridge/scripts/alter-bridge` is kept, unwired,
+as a fallback.
 
 ## How a message travels
 
@@ -92,22 +83,17 @@ watcher is gone.
 ## Layout
 
 ```
-plugin.json                            Codex manifest
 .claude-plugin/plugin.json             Claude manifest
+.claude-plugin/marketplace.json        the marketplace both CLIs install from
+.codex-plugin/plugin.json              Codex manifest (declares hooks/codex.json)
+hooks/hooks.json                       Claude hooks
+hooks/codex.json                       Codex hooks
+install.sh                             builds the binary and installs the plugin on both CLIs
 skills/alter-bridge/SKILL.md           how an agent is meant to use it
 go/                                    the bridge CLI (Go); go/build.sh builds bin/alter-bridge
 bin/alter-bridge                       the built binary the hooks and the skill call (gitignored)
 skills/alter-bridge/scripts/alter-bridge       the original bash bridge, kept as fallback
-skills/alter-bridge/scripts/install-hooks.sh   installs/reconciles hooks in both runtimes
 ```
-
-Both runtimes install from this local marketplace into a cache
-(`~/.claude/plugins/cache/agents-marketplace/alter-bridge/` and
-`~/.codex/plugins/cache/agents-marketplace/alter-bridge/`), not a live symlink
-back to this directory. After editing a file here, run `./install.sh` at the
-repo root again (it reinstalls both sides) to propagate the change — Claude
-picks it up at the next session start or `/reload-plugins`, Codex needs the
-reinstall itself to recopy the snapshot.
 
 ## Configuration
 

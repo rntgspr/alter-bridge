@@ -1,0 +1,15 @@
+{
+  "name": "alter-bridge",
+  "description": "Local marketplace for the alter-bridge plugin, installed from a checkout of this repository.",
+  "owner": {
+    "name": "Renato Gaspar",
+    "email": "rntgspr@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "alter-bridge",
+      "source": "./",
+      "description": "Exchange asynchronous messages with agents from other providers (Codex, or another Claude session) through files under ~/.alter-bridge/."
+    }
+  ]
+}

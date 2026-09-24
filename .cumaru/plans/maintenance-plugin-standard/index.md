@@ -105,9 +105,9 @@ Codex:
 
 | Task | Title | Status | Depends on |
 |------|-------|--------|-----------|
-| [T1](t1.md) | Marketplace, manifests, bundled hooks, `install.sh` | pending | — |
-| [T2](t2.md) | Docs and installer retirement | pending | T1 |
-| [T3](t3.md) | Live cutover of this machine | pending | T2 |
+| [T1](t1.md) | Marketplace, manifests, bundled hooks, `install.sh` | done | — |
+| [T2](t2.md) | Docs and installer retirement | done | T1 |
+| [T3](t3.md) | Live cutover of this machine | blocked | T2 |
 
 ## Out of scope
 

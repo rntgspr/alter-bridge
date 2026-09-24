@@ -1,0 +1,39 @@
+{
+  "description": "alter-bridge delivery for Claude Code: register the mailbox watch paths, drain pending messages into each turn, and wake the session when a message lands.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/alter-bridge\" watchpaths claude",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/alter-bridge\" hook claude",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "FileChanged": [
+      {
+        "matcher": ".*__from_.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/alter-bridge\" relay claude",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

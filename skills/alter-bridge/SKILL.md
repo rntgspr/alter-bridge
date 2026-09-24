@@ -17,13 +17,14 @@ read. No daemon, no network.
 
 Root: `~/.alter-bridge` (override with `ALTER_BRIDGE_ROOT`).
 Command: `~/agentic-workspace/papa/alter-bridge/bin/alter-bridge` — the Go
-binary, not on PATH; call it by this absolute path. Provider-agnostic, used by
-Claude and Codex alike. The older bash script,
+binary; call it by this absolute path, which works on both runtimes (Claude
+also has it on the Bash `PATH` while the plugin is enabled). Provider-agnostic,
+used by Claude and Codex alike. The older bash script,
 `skills/alter-bridge/scripts/alter-bridge`, is kept as a fallback only.
 
-Before first use, build the binary with `go/build.sh` and run
-`skills/alter-bridge/scripts/install-hooks.sh` once (no argument installs both
-runtimes' hooks) — see the README's Install section.
+Before first use, run `./install.sh` from the checkout: it builds the binary and
+installs the plugin, hooks included, on both runtimes — see the README's Install
+section.
 
 Every `alter-bridge <sub>` below is shorthand for that full invocation.
 
@@ -78,7 +79,7 @@ Options:
 ## Receiving
 
 Pending messages are injected at the top of every turn by the `UserPromptSubmit`
-hook `install-hooks.sh` installs, which runs `alter-bridge hook claude` (Codex:
+hook the plugin bundles, which runs `alter-bridge hook claude` (Codex:
 `hook codex`). They are already archived by the time you see them — act on them
 directly. That entry point reads the session id and `cwd` from the harness
 payload, guards on the working directory (only inside `~/agentic-workspace`),

@@ -8,5 +8,11 @@
   },
   "repository": "https://github.com/rntgspr/alter-bridge",
   "license": "MIT",
-  "keywords": ["agents", "messaging", "codex", "inter-provider"]
+  "keywords": ["agents", "messaging", "codex", "inter-provider"],
+  "skills": "./skills/",
+  "hooks": "./hooks/codex.json",
+  "interface": {
+    "displayName": "Alter Bridge",
+    "shortDescription": "Asynchronous mailbox between Claude and Codex agents"
+  }
 }
