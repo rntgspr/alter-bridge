@@ -40,8 +40,8 @@ func TestAddress_String(t *testing.T) {
 	}
 }
 
-// Expected values captured from the bash slugify in
-// skills/alter-bridge/scripts/alter-bridge, which works on bytes.
+// Expected values captured from the removed bash slugify (see git history of
+// skills/alter-bridge/scripts/alter-bridge), which worked on bytes.
 func TestSlugify_MatchesBash(t *testing.T) {
 	cases := map[string]string{
 		"workspace/fe":          "workspace-fe",

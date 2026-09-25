@@ -19,8 +19,7 @@ Root: `~/.alter-bridge` (override with `ALTER_BRIDGE_ROOT`).
 Command: `~/agentic-workspace/papa/alter-bridge/bin/alter-bridge` — the Go
 binary built by `go/build.sh`; call it by this absolute path, which works on
 both runtimes. Provider-agnostic,
-used by Claude and Codex alike. The older bash script,
-`skills/alter-bridge/scripts/alter-bridge`, is kept as a fallback only.
+used by Claude and Codex alike.
 
 Before first use, install the plugin, hooks included. On Claude Code, run
 `/plugin marketplace add rntgspr/alter-bridge` and then

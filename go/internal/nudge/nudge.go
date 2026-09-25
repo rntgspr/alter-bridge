@@ -10,9 +10,9 @@ import (
 	"github.com/rntgspr/alter-bridge/internal/address"
 )
 
-// BridgeScript is the command the nudged session is told to run. It points at
-// the bash script until the Go binary replaces it in the hooks.
-const BridgeScript = "~/agentic-workspace/papa/alter-bridge/skills/alter-bridge/scripts/alter-bridge"
+// BridgeScript is the command the nudged session is told to run: the Go binary
+// that go/build.sh builds into the checkout's bin/.
+const BridgeScript = "~/agentic-workspace/papa/alter-bridge/bin/alter-bridge"
 
 // Nudger runs the wake-up command. Run executes a command with its output
 // discarded; ThreadFor maps a Codex mailbox slug to a live thread id, or "".

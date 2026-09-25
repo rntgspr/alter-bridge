@@ -31,7 +31,7 @@ func TestNotify_CodexRecipientQueuesOnItsThread(t *testing.T) {
 	n.Notify(papa, bridge, "0a1b2c3d")
 
 	want := [][]string{{"codex", "queue", "--thread", "tid-bridge", "--message",
-		"alter-bridge: new message from claude:papa (msgid 0a1b2c3d). Run: " + BridgeScript + " inbox codex:bridge"}}
+		"alter-bridge: new message from claude:papa (msgid 0a1b2c3d). Run: ~/agentic-workspace/papa/alter-bridge/bin/alter-bridge inbox codex:bridge"}}
 	if !reflect.DeepEqual(rec.calls, want) {
 		t.Fatalf("calls = %q\nwant  %q", rec.calls, want)
 	}

@@ -79,6 +79,7 @@ release-based install. Reconcile T3 before either plan is absorbed.
 | [T2](t2.md) | Root release workflow | done | T1 |
 | [T3](t3.md) | Hooks, marketplace `archive` source, docs | done | T1 |
 | [T4](t4.md) | First release and live Claude cutover (Renato-gated) | pending | T2, T3 |
+| [T5](t5.md) | Remove the bash script from the skill | done | T3 |
 
 ## Out of scope
 

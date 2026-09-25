@@ -73,9 +73,6 @@ whenever its definition changes. Codex runs a cached copy of the checkout, so
 re-run `./install.sh` after you rebuild or edit anything. Re-running it is
 safe.
 
-The bash script `skills/alter-bridge/scripts/alter-bridge` is kept, unwired,
-as a fallback.
-
 ## How a message travels
 
 1. `send` writes the message to a temp file and `mv`s it into the recipient's
@@ -117,7 +114,6 @@ go/                                    the bridge CLI (Go); go/build.sh builds b
 go/release.sh                          builds go/alter-bridge-<os>-<arch> and the release zip in dist/
 go/alter-bridge                        launcher: runs the go/ binary for the host
 bin/alter-bridge                       the local binary Codex and the skill call (gitignored)
-skills/alter-bridge/scripts/alter-bridge       the original bash bridge, kept as fallback
 ```
 
 ## Configuration
