@@ -1,0 +1,12 @@
+#!/bin/sh
+# Runs the plugin's bundled launcher from either installed runtime.
+set -eu
+
+skill_dir="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+plugin_root="$(CDPATH= cd -- "$skill_dir/../.." && pwd)"
+
+if [ -x "$plugin_root/bin/alter-bridge" ]; then
+  exec "$plugin_root/bin/alter-bridge" "$@"
+fi
+
+exec "$plugin_root/go/alter-bridge" "$@"

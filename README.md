@@ -52,26 +52,23 @@ claude --plugin-dir .
 
 ### Codex
 
-From a checkout:
+Download the precompiled Codex release archive and register its bundled local
+marketplace. No Git checkout or Go toolchain is needed:
 
-```
-./install.sh
-```
-
-It builds the Go binary `bin/alter-bridge` (gitignored) with `go/build.sh`,
-then runs:
-
-```
-codex plugin marketplace add <checkout>
-codex plugin add alter-bridge@alter-bridge
+```sh
+mkdir -p "$HOME/.local/share/alter-bridge-codex"
+curl -fL https://github.com/rntgspr/alter-bridge/releases/latest/download/alter-bridge-codex.zip -o /tmp/alter-bridge-codex.zip
+unzip -oq /tmp/alter-bridge-codex.zip -d "$HOME/.local/share/alter-bridge-codex"
+codex plugin marketplace add "$HOME/.local/share/alter-bridge-codex"
+codex plugin add alter-bridge@alter-bridge-codex
 ```
 
 Codex gets `hooks/codex.json`, which `.codex-plugin/plugin.json` declares:
 `UserPromptSubmit` (`hook codex`). Codex skips a plugin hook until you trust
 it, so open `/hooks` in Codex and trust the alter-bridge hook once, and again
-whenever its definition changes. Codex runs a cached copy of the checkout, so
-re-run `./install.sh` after you rebuild or edit anything. Re-running it is
-safe.
+whenever its definition changes. For an update, download and extract the new
+archive over the same directory, then run `codex plugin add
+alter-bridge@alter-bridge-codex` again and start a new thread.
 
 ## How a message travels
 
@@ -103,17 +100,17 @@ watcher is gone.
 
 ```
 .claude-plugin/plugin.json             Claude manifest
-.claude-plugin/marketplace.json        the marketplace both CLIs install from (Claude: archive source)
+.claude-plugin/marketplace.json        Claude marketplace (archive source)
 .codex-plugin/plugin.json              Codex manifest (declares hooks/codex.json)
-.github/workflows/release.yml          on v* tags: build, publish the release zip, update the marketplace
+.github/workflows/release.yml          on v* tags: build both zips, update the Claude marketplace
 hooks/hooks.json                       Claude hooks (call go/alter-bridge)
 hooks/codex.json                       Codex hooks (call bin/alter-bridge)
-install.sh                             builds bin/alter-bridge and installs the plugin on Codex
+dist/alter-bridge-codex.zip            precompiled Codex plugin with a local marketplace
 skills/alter-bridge/SKILL.md           how an agent is meant to use it
-go/                                    the bridge CLI (Go); go/build.sh builds bin/alter-bridge
-go/release.sh                          builds go/alter-bridge-<os>-<arch> and the release zip in dist/
+go/                                    the bridge CLI (Go)
+go/release.sh                          builds binaries and both release zips in dist/
 go/alter-bridge                        launcher: runs the go/ binary for the host
-bin/alter-bridge                       the local binary Codex and the skill call (gitignored)
+skills/alter-bridge/scripts/alter-bridge  launcher used by the installed skill
 ```
 
 ## Configuration

@@ -16,15 +16,14 @@ message, delivered by an atomic `mv` into the recipient's directory, archived on
 read. No daemon, no network.
 
 Root: `~/.alter-bridge` (override with `ALTER_BRIDGE_ROOT`).
-Command: `~/agentic-workspace/papa/alter-bridge/bin/alter-bridge` — the Go
-binary built by `go/build.sh`; call it by this absolute path, which works on
-both runtimes. Provider-agnostic,
-used by Claude and Codex alike.
+Command: `scripts/alter-bridge` beside this skill file. It selects the bundled
+binary for the current runtime and host. Resolve the script relative to this
+installed `SKILL.md`, then call it by its absolute path.
 
 Before first use, install the plugin, hooks included. On Claude Code, run
 `/plugin marketplace add rntgspr/alter-bridge` and then
-`/plugin install alter-bridge@alter-bridge`. On Codex, run `./install.sh` from the
-checkout. The README's Install section has the details.
+`/plugin install alter-bridge@alter-bridge`. On Codex, install the precompiled
+Codex release archive using the README's Install section.
 
 Every `alter-bridge <sub>` below is shorthand for that full invocation.
 

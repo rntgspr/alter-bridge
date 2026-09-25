@@ -171,7 +171,7 @@ func TestRelay_CodexNudgesInsteadOfRinging(t *testing.T) {
 	}
 
 	want := [][]string{{"codex", "queue", "--thread", "bridge", "--message",
-		"alter-bridge: new message from claude:papa (msgid aaaaaaaa). Run: " + nudge.BridgeScript + " inbox codex:bridge"}}
+		"alter-bridge: new message from claude:papa (msgid aaaaaaaa). Use the alter-bridge skill to run inbox codex:bridge"}}
 	if !reflect.DeepEqual(rec.nudges, want) {
 		t.Fatalf("nudges = %q, want %q", rec.nudges, want)
 	}

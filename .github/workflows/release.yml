@@ -1,5 +1,5 @@
-# Builds the Claude plugin zip with go/release.sh when a v* tag is pushed,
-# publishes it as a GitHub Release asset, and points the alter-bridge entry of
+# Builds the Claude and Codex plugin zips with go/release.sh on v* tags,
+# publishes both as GitHub Release assets, and points the Claude entry of
 # .claude-plugin/marketplace.json on the default branch at that asset.
 name: release
 
@@ -33,10 +33,12 @@ jobs:
           ./archive-source_test.sh
 
       - name: Build
-        run: go/release.sh "$TAG"
+        run: |
+          go/release.sh "$TAG"
+          go/codex-package_test.sh
 
       - name: Publish release
-        run: gh release create "$TAG" "dist/alter-bridge-$TAG.zip" --title "$TAG" --generate-notes
+        run: gh release create "$TAG" "dist/alter-bridge-$TAG.zip" dist/alter-bridge-codex.zip --title "$TAG" --generate-notes
 
       - name: Point marketplace at the release zip
         run: |

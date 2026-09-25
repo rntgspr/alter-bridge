@@ -10,10 +10,6 @@ import (
 	"github.com/rntgspr/alter-bridge/internal/address"
 )
 
-// BridgeScript is the command the nudged session is told to run: the Go binary
-// that go/build.sh builds into the checkout's bin/.
-const BridgeScript = "~/agentic-workspace/papa/alter-bridge/bin/alter-bridge"
-
 // Nudger runs the wake-up command. Run executes a command with its output
 // discarded; ThreadFor maps a Codex mailbox slug to a live thread id, or "".
 type Nudger struct {
@@ -42,6 +38,6 @@ func (n Nudger) Notify(from, to address.Address, msgid string) {
 		thread = to.Value
 	}
 
-	notice := fmt.Sprintf("alter-bridge: new message from %s (msgid %s). Run: %s inbox %s", from, msgid, BridgeScript, to)
+	notice := fmt.Sprintf("alter-bridge: new message from %s (msgid %s). Use the alter-bridge skill to run inbox %s", from, msgid, to)
 	_ = n.Run("codex", "queue", "--thread", thread, "--message", notice)
 }
