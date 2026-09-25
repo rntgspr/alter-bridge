@@ -65,7 +65,7 @@ files from an earlier installation:
 # unzip -oq /tmp/alter-bridge-codex.zip -d "$HOME/.local/share/alter-bridge-codex"
 # codex plugin marketplace add "$HOME/.local/share/alter-bridge-codex"
 # codex plugin add alter-bridge@alter-bridge-codex
-curl -fsSL https://raw.githubusercontent.com/rntgspr/alter-bridge/main/install-codex.sh | sh
+curl -fsSL https://raw.githubusercontent.com/rntgspr/alter-bridge/refs/heads/main/install-codex.sh | sh
 ```
 
 Codex gets `hooks/codex.json`, which `.codex-plugin/plugin.json` declares:
