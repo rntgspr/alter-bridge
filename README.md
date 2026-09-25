@@ -52,23 +52,26 @@ claude --plugin-dir .
 
 ### Codex
 
-Download the precompiled Codex release archive and register its bundled local
-marketplace. No Git checkout or Go toolchain is needed:
+Install or update with one command. The comments show the equivalent manual
+commands for v0.2.0. The script uses the latest release and a temporary
+directory, validates the archive, then copies it into the persistent path.
+It also checks for `curl`, `unzip`, and `codex`. No Git checkout or Go toolchain
+is needed:
 
 ```sh
-mkdir -p "$HOME/.local/share/alter-bridge-codex"
-curl -fL https://github.com/rntgspr/alter-bridge/releases/latest/download/alter-bridge-codex.zip -o /tmp/alter-bridge-codex.zip
-unzip -oq /tmp/alter-bridge-codex.zip -d "$HOME/.local/share/alter-bridge-codex"
-codex plugin marketplace add "$HOME/.local/share/alter-bridge-codex"
-codex plugin add alter-bridge@alter-bridge-codex
+# mkdir -p "$HOME/.local/share/alter-bridge-codex"
+# curl -fL https://github.com/rntgspr/alter-bridge/releases/download/v0.2.0/alter-bridge-codex.zip -o /tmp/alter-bridge-codex.zip
+# unzip -oq /tmp/alter-bridge-codex.zip -d "$HOME/.local/share/alter-bridge-codex"
+# codex plugin marketplace add "$HOME/.local/share/alter-bridge-codex"
+# codex plugin add alter-bridge@alter-bridge-codex
+curl -fsSL https://raw.githubusercontent.com/rntgspr/alter-bridge/main/install-codex.sh | sh
 ```
 
 Codex gets `hooks/codex.json`, which `.codex-plugin/plugin.json` declares:
 `UserPromptSubmit` (`hook codex`). Codex skips a plugin hook until you trust
 it, so open `/hooks` in Codex and trust the alter-bridge hook once, and again
-whenever its definition changes. For an update, download and extract the new
-archive over the same directory, then run `codex plugin add
-alter-bridge@alter-bridge-codex` again and start a new thread.
+whenever its definition changes. Start a new thread after installation or
+update. Re-run the same command to update the plugin.
 
 ## How a message travels
 
@@ -106,6 +109,7 @@ watcher is gone.
 hooks/hooks.json                       Claude hooks (call go/alter-bridge)
 hooks/codex.json                       Codex hooks (call bin/alter-bridge)
 dist/alter-bridge-codex.zip            precompiled Codex plugin with a local marketplace
+install-codex.sh                       downloads and installs the Codex release archive
 skills/alter-bridge/SKILL.md           how an agent is meant to use it
 go/                                    the bridge CLI (Go)
 go/release.sh                          builds binaries and both release zips in dist/

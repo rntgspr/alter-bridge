@@ -36,6 +36,7 @@ jobs:
         run: |
           go/release.sh "$TAG"
           go/codex-package_test.sh
+          go/codex-install_test.sh
 
       - name: Publish release
         run: gh release create "$TAG" "dist/alter-bridge-$TAG.zip" dist/alter-bridge-codex.zip --title "$TAG" --generate-notes
