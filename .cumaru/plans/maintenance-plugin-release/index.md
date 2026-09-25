@@ -56,16 +56,20 @@ release-based install. Reconcile T3 before either plan is absorbed.
   `.github/workflows/release.yml`, which calls `go/release.sh`, attaches the
   zip to the GitHub Release, and updates the `archive` entry (`url`,
   `sha256`) in `.claude-plugin/marketplace.json` on the default branch.
-- AC4: `.claude-plugin/marketplace.json` MUST declare `alter-bridge` with an
-  `archive` source whose `sha256` matches the released zip.
+- AC4: WHEN the first `v*` release completes THE SYSTEM SHALL leave
+  `.claude-plugin/marketplace.json` declaring `alter-bridge` with an `archive`
+  source whose `sha256` matches the released zip. The workflow's
+  `go/archive-source.sh` step does the switch, so the checked-in file keeps
+  `"source": "./"` until then. Verified in T4.
 - AC5: WHEN a user runs `/plugin marketplace add rntgspr/alter-bridge` and
   `/plugin install alter-bridge@alter-bridge` THE SYSTEM SHALL install from the
   release zip, and the three hooks SHALL work without Go or a checkout.
 - AC6: `README.md` and `SKILL.md` MUST describe the standard install as the
   Claude install path, with no `install.sh` step for Claude. Local development
   MUST be documented via `claude --plugin-dir`.
-- AC7: The Codex wiring MUST keep working unchanged: `hooks/codex.json`,
-  `.codex-plugin/plugin.json`, and the `bin/alter-bridge` build path.
+- AC7: This plan MUST NOT modify the Codex files (`hooks/codex.json`,
+  `.codex-plugin/plugin.json`). Codex compatibility with the release
+  marketplace belongs to Renato's separate Codex plan.
 
 ## Plan / DAG
 
@@ -73,7 +77,7 @@ release-based install. Reconcile T3 before either plan is absorbed.
 |------|-------|--------|-----------|
 | [T1](t1.md) | Builder `go/release.sh` and launcher | done | — |
 | [T2](t2.md) | Root release workflow | done | T1 |
-| [T3](t3.md) | Hooks, marketplace `archive` source, docs | blocked | T1 |
+| [T3](t3.md) | Hooks, marketplace `archive` source, docs | done | T1 |
 | [T4](t4.md) | First release and live Claude cutover (Renato-gated) | pending | T2, T3 |
 
 ## Out of scope
@@ -97,8 +101,8 @@ release-based install. Reconcile T3 before either plan is absorbed.
 - **Double hooks during cutover:** the release plugin's hooks and the manual
   settings hooks must not overlap. This is the same ordering risk recorded in
   `maintenance-plugin-standard`.
-- **Codex reads the Claude marketplace (observed, blocks T3/T4):** codex-cli
-  0.156.1 cannot resolve an `archive` source in `.claude-plugin/marketplace.json`,
-  so the switch (T3) and the workflow's rewrite (T2) break the Codex install.
-  Evidence and options are in [handoff-t3](handoff-t3.md). No tag may be pushed
-  until Renato decides.
+- **Codex reads the Claude marketplace (observed):** codex-cli 0.156.1
+  cannot resolve an `archive` source in `.claude-plugin/marketplace.json`, so
+  the first release breaks a Codex install from this marketplace. On
+  2026-09-24 Renato ruled Codex out of scope for this plan and owns the fix in
+  his Codex plan. Evidence is in [handoff-t3](handoff-t3.md).

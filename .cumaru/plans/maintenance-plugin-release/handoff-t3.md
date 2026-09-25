@@ -2,7 +2,7 @@
 human_revised: false
 plan: maintenance-plugin-release
 task: T3
-status: partial
+status: done
 date: 2026-09-24
 summary: Hand-off for maintenance-plugin-release T3 - hooks on the go/ launcher, Claude-free install.sh and docs done; the archive switch of marketplace.json is blocked because it breaks the Codex install.
 ---
@@ -20,7 +20,15 @@ summary: Hand-off for maintenance-plugin-release T3 - hooks on the go/ launcher,
 | [`skills/alter-bridge/SKILL.md`](skills/alter-bridge/SKILL.md) | modified - install per runtime; dropped the "on the Bash `PATH`" claim, false for the release zip (no `bin/`) |
 <!-- /cumaru:touched -->
 
-## Blocker: `.claude-plugin/marketplace.json` NOT switched to `archive`
+## Resolution (2026-09-24)
+
+Renato ruled Codex out of scope for this plan. The checked-in marketplace
+keeps `"source": "./"`, and the release workflow's `go/archive-source.sh` step
+switches it to `archive` on the first `v*` release. That puts AC4's check in
+T4. The Codex incompatibility recorded below is now Renato's Codex plan to
+handle.
+
+## Former blocker: `.claude-plugin/marketplace.json` NOT switched to `archive`
 
 Codex reads `.claude-plugin/marketplace.json` as its legacy-compatible
 marketplace, and it cannot resolve an `archive` source. Both runs below used a
