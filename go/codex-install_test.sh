@@ -25,13 +25,17 @@ printf '%s\n' "$*" >>"$TEST_LOG"
 EOF
 chmod +x "$work/bin/curl" "$work/bin/codex"
 
-for run in 1 2; do
-  HOME="$work/home" PATH="$work/bin:$PATH" TEST_ARCHIVE="$repo/dist/alter-bridge-codex.zip" \
-    TEST_LOG="$work/commands" sh "$repo/install-codex.sh"
-done
-
 plugin="$work/home/.local/share/alter-bridge-codex"
+HOME="$work/home" PATH="$work/bin:$PATH" TEST_ARCHIVE="$repo/dist/alter-bridge-codex.zip" \
+  TEST_LOG="$work/commands" sh "$repo/install-codex.sh"
+
+printf 'stale manifest\n' >"$plugin/.codex-plugin/plugin.json"
+chmod 444 "$plugin/.codex-plugin/plugin.json"
+
+HOME="$work/home" PATH="$work/bin:$PATH" TEST_ARCHIVE="$repo/dist/alter-bridge-codex.zip" \
+  TEST_LOG="$work/commands" sh "$repo/install-codex.sh"
+
 test -x "$plugin/bin/alter-bridge"
-test -f "$plugin/.codex-plugin/plugin.json"
+unzip -p "$repo/dist/alter-bridge-codex.zip" .codex-plugin/plugin.json | cmp - "$plugin/.codex-plugin/plugin.json"
 test "$(rg -c '^plugin marketplace add ' "$work/commands")" -eq 2
 test "$(rg -c '^plugin add alter-bridge@alter-bridge-codex$' "$work/commands")" -eq 2

@@ -30,7 +30,7 @@ if [ ! -f "$work/plugin/.agents/plugins/marketplace.json" ] || \
 fi
 
 mkdir -p "$target"
-cp -R "$work/plugin/." "$target/"
+cp -Rf "$work/plugin/." "$target/"
 codex plugin marketplace add "$target"
 codex plugin add alter-bridge@alter-bridge-codex
 

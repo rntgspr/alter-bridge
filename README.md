@@ -56,7 +56,8 @@ Install or update with one command. The comments show the equivalent manual
 commands for v0.2.0. The script uses the latest release and a temporary
 directory, validates the archive, then copies it into the persistent path.
 It also checks for `curl`, `unzip`, and `codex`. No Git checkout or Go toolchain
-is needed:
+is needed. Every run downloads the archive again and force-overwrites matching
+files from an earlier installation:
 
 ```sh
 # mkdir -p "$HOME/.local/share/alter-bridge-codex"
