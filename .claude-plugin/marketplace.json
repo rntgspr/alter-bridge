@@ -8,7 +8,11 @@
   "plugins": [
     {
       "name": "alter-bridge",
-      "source": "./",
+      "source": {
+        "source": "archive",
+        "url": "https://github.com/rntgspr/alter-bridge/releases/download/v0.1.0/alter-bridge-v0.1.0.zip",
+        "sha256": "cb00f13f4dee954874889efa80fa93f86e8b68eed57798e8e71e1d3f9e10d0c0"
+      },
       "description": "Exchange asynchronous messages with agents from other providers (Codex, or another Claude session) through files under ~/.alter-bridge/."
     }
   ]
