@@ -99,34 +99,31 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 
 ### Plugin packaging and install
 
-- The bridge MUST ship as a plugin on both runtimes: `.claude-plugin/plugin.json`
-  for Claude, `plugin.json` for Codex.
-- Hook wiring is NOT part of the plugin manifest (Codex does not yet execute
-  plugin-bundled hooks — openai/codex#16430) — `install-hooks.sh` MUST write
-  hook entries directly into each runtime's global config
-  (`~/.claude/settings.json`, `~/.codex/hooks.json`), backing up the Codex
-  file before any rewrite.
-- `install-hooks.sh` MUST wire the Go binary with the provider argument —
-  `"$HOME/.../bin/alter-bridge" watchpaths claude`, `... hook claude`,
-  `... relay claude` (matcher `.*__from_.*`), and `... hook codex` — and MUST
-  refuse (exit 1) when `bin/alter-bridge` is missing.
-- Re-running `install-hooks.sh` MUST be safe: an entry already pointing at one
-  of the bridge's own commands, in either the legacy `bash "<script>" <sub>`
-  form or the Go `"<bin>" <sub> <provider>` form, is reconciled in place
-  rather than duplicated, and a file with nothing to change is left unwritten.
-- `install-hooks.sh` MAY be scoped to one runtime via a `claude` or `codex`
-  argument; with no argument it SHALL install both.
+- Claude MUST load `.claude-plugin/plugin.json` and the bundled
+  `hooks/hooks.json`, which declares `SessionStart`, `UserPromptSubmit`, and
+  `FileChanged` commands through `${CLAUDE_PLUGIN_ROOT}/go/alter-bridge`.
+- The Claude marketplace MUST use an `archive` source with a release zip URL
+  and its SHA-256. `go/release.sh` MUST package the launcher, platform
+  binaries, skill, manifest, and hooks; the root release workflow MUST attach
+  the zip and update the marketplace source after a `v*` tag.
+- Codex MUST load `.codex-plugin/plugin.json` and the bundled
+  `hooks/codex.json`, which declares one `UserPromptSubmit` command through
+  `${PLUGIN_ROOT}/bin/alter-bridge`. Codex hook execution requires trust of
+  the plugin hook definition in `/hooks`.
+- The Codex release zip MUST contain its own local marketplace manifest,
+  plugin manifest, hook, skill, and platform binaries. `install-codex.sh`
+  downloads that zip from the latest release, installs it under
+  `~/.local/share/alter-bridge-codex`, then registers and installs the plugin
+  with the Codex CLI.
 
 ## Decisions
 
-- 2026-09 (repo bootstrap `847387a`..`95015e5`): extracted from a `.agents`
-  monorepo into its own repository; root `plugin.json` restored for Codex
-  discovery and repository URLs repointed. Reflects a packaging move, not a
-  behavior change.
-- The bridge CLI is deliberately off `PATH` — every caller invokes it by
-  absolute path, keeping the mailbox tool scoped to the skill that documents
-  its use. Originally the bash script under `skills/alter-bridge/scripts/`;
-  since `maintenance-go-cutover`, `bin/alter-bridge`.
+- The repository was extracted from a `.agents` monorepo. Codex discovery now
+  uses `.codex-plugin/plugin.json` inside its release archive, while Claude
+  uses `.claude-plugin/plugin.json`.
+- Plugin hooks invoke their bundled launcher by plugin-root path. The
+  checkout's `bin/alter-bridge` is a local build artifact; release installs
+  do not depend on that checkout path.
 - `who` reads addressable agents live from each CLI's own state (`claude
   agents --json`, the Codex `state_5.sqlite` threads table) rather than
   caching a roster here, since the CLIs already hold that truth and a second
@@ -268,10 +265,9 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   subprocess per store read, as bash did. Automatic names can change when a
   session resumes (`alter-bridge-ef` became `alter-bridge-11`); bash and Go
   both follow the current name. Codex and OpenCode resolution is unchanged.
-- 2026-09 (`maintenance-go-cutover`): Go is canonical. The live hooks, the
-  installer, `SKILL.md`, and `README.md` call `bin/alter-bridge` (built by
-  `go/build.sh`; `bin/` is gitignored, so a checkout must build before
-  installing) with the provider argument; the "built but not yet wired"
+- 2026-09 (`maintenance-go-cutover`): Go is canonical. The original cutover
+  wired `bin/alter-bridge` (built by `go/build.sh`) with the provider
+  argument; the "built but not yet wired"
   notes in the per-command Go decisions above are superseded, and those
   decisions' deviations from bash are now the live behavior. The bash script
   is kept, unwired, as a fallback; returning to it means restoring the
@@ -283,15 +279,31 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
   stays disabled until its trust is re-approved inside Codex; the Codex
   payload's id fields (`session_id` / `thread_id` / `threadId`) are not yet
   verified against a live Codex turn.
+- The release pipeline publishes separate Claude and Codex archives. The
+  Claude archive is selected by the SHA-pinned `archive` source in
+  `.claude-plugin/marketplace.json`; the Codex installer downloads
+  `alter-bridge-codex.zip` and registers its local marketplace. This avoids
+  relying on Codex support for Claude's `archive` source.
+- The current machine has the Claude plugin version 0.2.0 enabled at both
+  project and user scope, while three manual Claude hooks remain in
+  `~/.claude/settings.json`. The plugin exposes its skill and all three
+  hooks, but a single effective hook per event and live drain after cutover
+  remain unverified. The Codex plugin version 0.2.0 is enabled through the
+  `alter-bridge-codex` marketplace and its prompt hook has a trusted hash.
 
 ## Files
 
 - [skills/alter-bridge/scripts/alter-bridge](/skills/alter-bridge/scripts/alter-bridge) — the original bash CLI, kept unwired as a fallback: addressing, `send`, `inbox`/`peek`, `hook`, `watchpaths`, `relay`, `archive`, `purge`, `who`.
-- [go/build.sh](/go/build.sh) — builds the canonical binary `bin/alter-bridge` (gitignored) that the hooks and the skill call.
-- [skills/alter-bridge/scripts/install-hooks.sh](/skills/alter-bridge/scripts/install-hooks.sh) — installs/reconciles the Go-binary hooks in `~/.claude/settings.json` and `~/.codex/hooks.json`, rewriting legacy bash entries in place.
+- [go/build.sh](/go/build.sh) — builds the checkout's `bin/alter-bridge` for local use.
 - [skills/alter-bridge/SKILL.md](/skills/alter-bridge/SKILL.md) — how an agent is meant to use the bridge (addressing, sending, replying, rules).
 - [.claude-plugin/plugin.json](/.claude-plugin/plugin.json) — Claude plugin manifest.
-- [plugin.json](/plugin.json) — Codex plugin manifest.
+- [.claude-plugin/marketplace.json](/.claude-plugin/marketplace.json) — SHA-pinned Claude release archive source.
+- [.codex-plugin/plugin.json](/.codex-plugin/plugin.json) — Codex plugin manifest.
+- [hooks/hooks.json](/hooks/hooks.json) — bundled Claude hooks.
+- [hooks/codex.json](/hooks/codex.json) — bundled Codex prompt hook.
+- [go/release.sh](/go/release.sh) — builds the Claude and Codex release archives.
+- [.github/workflows/release.yml](/.github/workflows/release.yml) — publishes archives and updates the Claude marketplace.
+- [install-codex.sh](/install-codex.sh) — installs the Codex archive from the latest release.
 - [README.md](/README.md) — install, message flow, and layout docs for the repository.
 - [go/internal/broker/root.go](/go/internal/broker/root.go) — Go rewrite: resolves and guards the mailbox root, with or without creating it.
 - [go/cmd/alter-bridge/](/go/cmd/alter-bridge/) — Go rewrite: CLI entry and the `send`, `inbox`, `peek`, `archive`, `purge`, `who`, `hook`, and `watchpaths` subcommands.
@@ -307,11 +319,17 @@ is driven entirely by each runtime's own hooks (`SessionStart`,
 | Link | Description |
 |------|-------------|
 | [alter-bridge](skills/alter-bridge/scripts/alter-bridge) | Original bash mailbox CLI, kept unwired as a fallback: address parsing, atomic send, drain/archive, hook entry points, doorbell relay, roster lookup. |
-| [go/build.sh](go/build.sh) | Builds the canonical Go binary `bin/alter-bridge` (gitignored) that the hooks and the skill call. |
-| [install-hooks.sh](skills/alter-bridge/scripts/install-hooks.sh) | Installs/reconciles the Claude and Codex hook wiring to `bin/alter-bridge <sub> <provider>`, refusing a missing binary and rewriting legacy bash entries in place. |
+| [go/build.sh](go/build.sh) | Builds the checkout's `bin/alter-bridge` for local use. |
 | [SKILL.md](skills/alter-bridge/SKILL.md) | Agent-facing usage contract for the bridge, written against the Go CLI (`--from`, explicit addresses). |
 | [.claude-plugin/plugin.json](.claude-plugin/plugin.json) | Claude-side plugin manifest. |
-| [plugin.json](plugin.json) | Codex-side plugin manifest. |
+| [.claude-plugin/marketplace.json](.claude-plugin/marketplace.json) | SHA-pinned Claude release archive source. |
+| [.codex-plugin/plugin.json](.codex-plugin/plugin.json) | Codex-side plugin manifest. |
+| [hooks/hooks.json](hooks/hooks.json) | Bundled Claude `SessionStart`, `UserPromptSubmit`, and `FileChanged` hooks. |
+| [hooks/codex.json](hooks/codex.json) | Bundled Codex `UserPromptSubmit` hook. |
+| [go/release.sh](go/release.sh) | Builds separate Claude and Codex plugin archives with platform binaries. |
+| [go/archive-source.sh](go/archive-source.sh) | Rewrites the Claude marketplace archive URL and SHA-256 after release. |
+| [.github/workflows/release.yml](.github/workflows/release.yml) | Publishes release assets and updates the Claude marketplace. |
+| [install-codex.sh](install-codex.sh) | Downloads and registers the Codex release plugin. |
 | [README.md](README.md) | Install steps, message-flow walkthrough, layout, and the known `FileChanged` rough edge. |
 | [go/internal/broker/root.go](go/internal/broker/root.go) | Go rewrite: `Resolve` picks the mailbox root, guarding against an empty or `/` `$HOME`, without creating it; `EnsureRoot` resolves and creates it. |
 | [go/cmd/alter-bridge/main.go](go/cmd/alter-bridge/main.go) | Go rewrite: CLI entry; dispatches subcommands and reads only `HOME` and `ALTER_BRIDGE_ROOT`. |

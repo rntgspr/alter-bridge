@@ -23,6 +23,12 @@ This plan ships the repository as its own marketplace and bundles each
 runtime's hooks in the plugin, so both runtimes install and wire the bridge
 through their official CLIs.
 
+The accepted distribution path now uses two release archives: Claude loads
+the SHA-pinned archive from `.claude-plugin/marketplace.json`; Codex downloads
+`alter-bridge-codex.zip` through `install-codex.sh` and registers the archive's
+local `alter-bridge-codex` marketplace. This supersedes the original shared
+checkout marketplace and `install.sh` design for future cutover evidence.
+
 ### Research (2026-09-24, Claude Code 2.1.282, codex-cli 0.156.1)
 
 Claude Code:
@@ -77,22 +83,24 @@ Codex:
 
 ## Acceptance Criteria (EARS / RFC 2119)
 
-- AC1: WHEN `claude plugin marketplace add <checkout>` and
+- AC1: WHEN `claude plugin marketplace add rntgspr/alter-bridge` and
   `claude plugin install alter-bridge@alter-bridge` run THE SYSTEM SHALL list
   `alter-bridge@alter-bridge` enabled with the `alter-bridge` skill and the
   `SessionStart`, `UserPromptSubmit`, and `FileChanged` hooks.
-- AC2: WHEN `codex plugin marketplace add <checkout>` and
-  `codex plugin add alter-bridge@alter-bridge` run THE SYSTEM SHALL list the
-  plugin installed and enabled, and Codex `hooks/list` SHALL report exactly one
-  alter-bridge hook: `userPromptSubmit` running `hook codex`.
+- AC2: WHEN `install-codex.sh` installs the separate Codex release archive THE
+  SYSTEM SHALL list `alter-bridge@alter-bridge-codex` installed and enabled,
+  and Codex SHALL expose exactly one bundled `userPromptSubmit` hook running
+  `hook codex` after its definition is trusted.
 - AC3: Plugin hook commands MUST reach the binary through the plugin root
   (`${CLAUDE_PLUGIN_ROOT}`, `${PLUGIN_ROOT}`), never an absolute checkout path.
 - AC4: WHEN each effective hook command is fed a payload against a scratch
   `ALTER_BRIDGE_ROOT` THE SYSTEM SHALL behave as the manual hooks did:
   `watchpaths` prints the `watchPaths` JSON, `hook` drains and archives a
   pending message, `relay` logs and ignores a `change` event.
-- AC5: `install.sh` MUST build the binary and install or reinstall the plugin
-  on both runtimes, exiting 0 when re-run.
+- AC5: The release MUST provide separate Claude and Codex archives with
+  working platform binaries; `install-codex.sh` MUST install or update the
+  Codex archive, while Claude MUST install through its release-backed
+  marketplace.
 - AC6: `README.md` and `SKILL.md` MUST describe the plugin install flow and
   MUST NOT reference `install-hooks.sh` or files that do not exist.
 - AC7: WHEN the live machine is cut over THE SYSTEM SHALL have exactly one
@@ -111,9 +119,7 @@ Codex:
 
 ## Out of scope
 
-- Shipping prebuilt binaries or a release pipeline; installs stay from a
-  local checkout that builds `bin/alter-bridge` first, so a GitHub-sourced
-  marketplace install is not supported yet.
+- Further release features beyond the two-archive distribution path.
 - `nudge.BridgeScript`, which still names the bash script in the Codex
   `codex queue` notice text.
 - The in-progress `maintenance-go-relay` plan.
