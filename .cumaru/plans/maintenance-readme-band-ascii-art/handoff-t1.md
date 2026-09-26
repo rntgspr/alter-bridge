@@ -2,10 +2,20 @@
 human_revised: false
 plan: maintenance-readme-band-ascii-art
 task: T1
+status: complete
+date: 2026-09-25
 summary: ASCII art added to README.md; reference and layout verification recorded.
 ---
 
 # Handoff — T1
+
+## Files touched
+
+<!-- cumaru:touched -->
+| Link | Description |
+|------|-------------|
+| [README.md](README.md) | Added the band's logo as compact ASCII art near the title. |
+<!-- /cumaru:touched -->
 
 ## Image reference
 
