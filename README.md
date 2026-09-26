@@ -1,5 +1,17 @@
 # alter-bridge
 
+```text
+         /\     /\
+        /  \   /  \
+       / A  \ / B  \
+      /      X      \
+     /      / \      \
+    /______/   \______\
+    |                 |
+    |  ALTER  BRIDGE  |
+    |_________________|
+```
+
 A filesystem mailbox shared by every agent on a machine. One file per message,
 delivered by an atomic `mv`, archived on read. No daemon, no network.
 

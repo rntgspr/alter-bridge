@@ -1,7 +1,7 @@
 ---
 human_revised: false
 scope: [bridge]
-status: in-progress
+status: done
 summary: Add a readable ASCII rendering of the Alter Bridge band's logo to the README using a verified visual reference.
 targets: [plugin]
 aux: []
@@ -32,7 +32,7 @@ terminal. Record the reference URL and attribution where appropriate.
 
 | Task | Title | Status | Depends on |
 |------|-------|--------|-----------|
-| [T1](t1.md) | Find a logo reference, render ASCII art, and verify README layout | pending | — |
+| [T1](t1.md) | Find a logo reference, render ASCII art, and verify README layout | done | — |
 
 ## Out of scope
 
